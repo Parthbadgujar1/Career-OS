@@ -1,0 +1,384 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ============ USERS & ROLES ============
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          String   @default("STUDENT") // STUDENT | MENTOR | ADMIN
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  studentProfile  StudentProfile?
+  mentorStudents  StudentProfile[] @relation("MentorStudents")
+}
+
+model StudentProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Onboarding data
+  degree            String? // B.Tech, B.Sc, BCA, BBA, MBA, MCA, M.Tech, M.Sc ...
+  specialization    String?
+  year              String? // 1st, 2nd, 3rd, 4th, Final
+  targetRole        String? // Software Developer, Data Analyst, AI/ML Engineer ...
+  interests         String   @default("[]") // JSON array of interests
+  weeklyHours       Int      @default(8)
+  preferredIndustries String @default("[]") // JSON array
+  onboardedAt       DateTime?
+  assessmentComplete Boolean  @default(false)
+  readinessScore    Int      @default(0)
+  githubUrl         String?
+  linkedinUrl       String?
+  currentStreak     Int      @default(0)
+  bestStreak        Int      @default(0)
+  lastActiveDate    DateTime?
+  mentorId          String?
+  mentor            User?    @relation("MentorStudents", fields: [mentorId], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  skills                  StudentSkill[]
+  assessments             Assessment[]
+  roadmap                 Roadmap?
+  tasks                   Task[]
+  weeklyReports           WeeklyReport[]
+  resumes                 Resume[]
+  profileReviews          ProfileReview[]
+  projects                Project[]
+  projectRecommendations  ProjectRecommendation[]
+  codingSubmissions       CodingSubmission[]
+  quizResults             QuizResult[]
+  eventParticipations     EventParticipation[]
+  opportunityActions      OpportunityAction[]
+  notifications           Notification[]
+  readinessSnapshots      ReadinessSnapshot[]
+  interviews              MockInterview[]
+}
+
+model Skill {
+  id       String   @id @default(cuid())
+  name     String   @unique
+  category String // LANGUAGES | DATA | AI | WEB | CS_FUNDAMENTALS | SOFT_SKILLS | TOOLS
+  sortOrder Int     @default(0)
+  studentSkills StudentSkill[]
+}
+
+model StudentSkill {
+  id        String   @id @default(cuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  skillId   String
+  skill     Skill    @relation(fields: [skillId], references: [id])
+  selfRating Int     @default(1) // 1..5
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, skillId])
+}
+
+// ============ ASSESSMENT ============
+
+model Assessment {
+  id        String   @id @default(cuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  type      String // TECHNICAL | CODING | APTITUDE | COMMUNICATION
+  score     Int
+  maxScore  Int
+  data      String   @default("{}") // JSON of answers
+  takenAt   DateTime @default(now())
+}
+
+// ============ ROADMAP ============
+
+model Roadmap {
+  id          String   @id @default(cuid())
+  studentId   String   @unique
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String
+  targetRole  String
+  totalWeeks  Int      @default(12)
+  aiSummary   String?
+  status      String   @default("ACTIVE") // ACTIVE | COMPLETED | PAUSED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items RoadmapItem[]
+}
+
+model RoadmapItem {
+  id        String   @id @default(cuid())
+  roadmapId String
+  roadmap   Roadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  weekNumber Int
+  title     String
+  description String?
+  category  String // LEARNING | CODING | PROJECT | PROFILE | INTERVIEW | OPPORTUNITY
+  order     Int      @default(0)
+  status    String   @default("PENDING") // PENDING | IN_PROGRESS | COMPLETED
+  source    String   @default("AI") // AI | TEMPLATE
+  createdAt DateTime @default(now())
+}
+
+// ============ DAILY TASKS ============
+
+model Task {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  category    String // LEARNING | CODING | PROJECT | PROFILE | INTERVIEW | OPPORTUNITY
+  priority    String   @default("NORMAL") // HIGH | NORMAL | LOW
+  status      String   @default("PENDING") // PENDING | COMPLETED | SKIPPED
+  source      String   @default("AUTO")
+  assignedDate DateTime
+  dueDate     DateTime?
+  completedAt DateTime?
+  rolloverCount Int    @default(0)
+  roadmapItemId String?
+  createdAt   DateTime @default(now())
+
+  @@index([studentId, assignedDate])
+}
+
+// ============ WEEKLY REPORT ============
+
+model WeeklyReport {
+  id             String   @id @default(cuid())
+  studentId      String
+  student        StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  weekStart      DateTime
+  weekEnd        DateTime
+  tasksPlanned   Int      @default(0)
+  tasksCompleted Int      @default(0)
+  completionRate Float    @default(0)
+  codingSolved   Int      @default(0)
+  learningHours  Float    @default(0)
+  aiNarrative    String?
+  weakAreas      String   @default("[]") // JSON array
+  priorities     String   @default("[]") // JSON array
+  createdAt      DateTime @default(now())
+}
+
+// ============ RESUME & PROFILE REVIEWS ============
+
+model Resume {
+  id        String   @id @default(cuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  version   Int      @default(1)
+  role      String?
+  fileUrl   String?
+  content   String?
+  atsScore  Int?
+  createdAt DateTime @default(now())
+
+  review ResumeReview?
+}
+
+model ResumeReview {
+  id            String   @id @default(cuid())
+  resumeId      String   @unique
+  resume        Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  atsScore      Int
+  missingSkills String   @default("[]") // JSON
+  suggestions   String   @default("[]") // JSON
+  impactStatements String @default("[]") // JSON
+  createdAt     DateTime @default(now())
+}
+
+model ProfileReview {
+  id        String   @id @default(cuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  platform  String // LINKEDIN | GITHUB
+  score     Int
+  url       String?
+  findings  String   @default("[]") // JSON
+  suggestions String @default("[]") // JSON
+  createdAt DateTime @default(now())
+}
+
+// ============ PROJECTS ============
+
+model Project {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  techStack   String   @default("[]") // JSON
+  status      String   @default("PLANNED") // PLANNED | IN_PROGRESS | COMPLETED
+  evidence    String?  // resume evidence blurb
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ProjectRecommendation {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  skillGaps   String   @default("[]") // JSON
+  milestones  String   @default("[]") // JSON
+  status      String   @default("SUGGESTED") // SUGGESTED | STARTED | COMPLETED | DISMISSED
+  createdAt   DateTime @default(now())
+}
+
+// ============ CODING ============
+
+model CodingProblem {
+  id           String   @id @default(cuid())
+  title        String
+  topic        String // Arrays, Strings, Linked List, Trees, DP ...
+  difficulty   String   @default("EASY") // EASY | MEDIUM | HARD
+  description  String
+  starterCode  String?
+  hint         String?
+  solution     String?
+  createdAt    DateTime @default(now())
+
+  submissions CodingSubmission[]
+}
+
+model CodingSubmission {
+  id        String   @id @default(cuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  problemId String
+  problem   CodingProblem @relation(fields: [problemId], references: [id])
+  status    String   @default("ATTEMPTED") // SOLVED | ATTEMPTED | FAILED
+  code      String?
+  createdAt DateTime @default(now())
+}
+
+// ============ QUIZZES ============
+
+model Quiz {
+  id            String   @id @default(cuid())
+  title         String
+  topic         String
+  difficulty    String   @default("EASY")
+  questionCount Int      @default(10)
+  questions     String   @default("[]") // JSON of questions
+  createdAt     DateTime @default(now())
+
+  results QuizResult[]
+}
+
+model QuizResult {
+  id        String   @id @default(cuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id])
+  score     Int
+  maxScore  Int
+  answers   String   @default("[]") // JSON
+  createdAt DateTime @default(now())
+}
+
+// ============ OPPORTUNITIES & EVENTS ============
+
+model Opportunity {
+  id          String   @id @default(cuid())
+  title       String
+  platform    String // internshala | linkedin | naukri | indeed | unstop | roadmap.sh | other
+  type        String // INTERNSHIP | JOB | HACKATHON | COMPETITION | EVENT | WEBINAR | QUIZ
+  url         String
+  description String?
+  eligibility String   @default("[]") // JSON
+  tags        String   @default("[]") // JSON
+  deadline    DateTime?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  actions OpportunityAction[]
+}
+
+model OpportunityAction {
+  id            String   @id @default(cuid())
+  studentId     String
+  student       StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  opportunityId String
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  action        String   @default("VIEWED") // VIEWED | SAVED | APPLIED | COMPLETED
+  createdAt     DateTime @default(now())
+
+  @@unique([studentId, opportunityId, action])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  type        String // HACKATHON | WEBINAR | WORKSHOP | CONTEST | CAREER
+  description String?
+  startsAt    DateTime
+  endsAt      DateTime?
+  url         String?
+  createdAt   DateTime @default(now())
+
+  participations EventParticipation[]
+}
+
+model EventParticipation {
+  id        String   @id @default(cuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  status    String   @default("REGISTERED") // REGISTERED | ATTENDED | COMPLETED
+  createdAt DateTime @default(now())
+
+  @@unique([studentId, eventId])
+}
+
+// ============ INTERVIEWS ============
+
+model MockInterview {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  type        String   // TECHNICAL | HR | BEHAVIORAL
+  role        String?
+  score       Int?
+  maxScore    Int?
+  transcript  String?
+  feedback    String   @default("[]") // JSON
+  weakAreas   String   @default("[]") // JSON
+  createdAt   DateTime @default(now())
+}
+
+// ============ READINESS & NOTIFICATIONS ============
+
+model ReadinessSnapshot {
+  id        String   @id @default(cuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  total     Int
+  dimensions String  @default("{}") // JSON of per-dimension scores
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  type      String   @default("INFO") // REMINDER | REPORT | OPPORTUNITY | ALERT
+  title     String
+  body      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
