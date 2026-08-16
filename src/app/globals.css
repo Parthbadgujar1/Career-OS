@@ -130,6 +130,122 @@
 .delay-700 { animation-delay: 700ms; }
 .delay-800 { animation-delay: 800ms; }
 
+/* ─── Premium Micro-interactions ─── */
+
+@keyframes shine-sweep {
+  0% { transform: translateX(-160%) skewX(-15deg); }
+  100% { transform: translateX(260%) skewX(-15deg); }
+}
+@keyframes gradient-text-flow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@keyframes aurora-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(28px, -20px) scale(1.08); }
+  66% { transform: translate(-20px, 14px) scale(0.94); }
+}
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+/* Shine sweep on buttons / elements */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: translateX(-160%) skewX(-15deg);
+  pointer-events: none;
+}
+.btn-shine:hover::after {
+  animation: shine-sweep 0.9s ease;
+}
+
+/* Animated gradient text */
+.text-gradient-animated {
+  background-size: 200% auto;
+  animation: gradient-text-flow 6s ease infinite;
+}
+
+/* Animated aurora wash */
+.bg-aurora {
+  background: linear-gradient(120deg, rgba(99, 102, 241, 0.35), rgba(168, 85, 247, 0.28), rgba(6, 182, 212, 0.3), rgba(99, 102, 241, 0.35));
+  background-size: 300% 300%;
+  animation: gradient-text-flow 18s ease infinite;
+}
+.animate-aurora {
+  animation: aurora-drift 16s ease-in-out infinite;
+}
+
+/* Glow ring on hover */
+.hover-glow-ring {
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.hover-glow-ring:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 0 4px var(--glow-primary), 0 10px 30px -8px var(--glow-primary);
+}
+
+/* Gradient-border card glow on hover */
+.card-glow {
+  position: relative;
+}
+.card-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.55), rgba(6, 182, 212, 0.45), transparent 70%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+.card-glow:hover::before { opacity: 1; }
+
+/* ─── Scroll Reveal ─── */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.reveal.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-left { transform: translateX(-32px); }
+.reveal-right { transform: translateX(32px); }
+.reveal-scale { transform: scale(0.92); }
+.reveal-visible.reveal-left,
+.reveal-visible.reveal-right,
+.reveal-visible.reveal-scale { transform: translateX(0) scale(1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-left,
+  .reveal-right,
+  .reveal-scale {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 /* ─── Gradient Backgrounds ─── */
 
 .bg-gradient-hero {
@@ -241,10 +357,23 @@
 
 /* ─── Body ─── */
 
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans, Arial, Helvetica, sans-serif);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ─── Scrollbar ─── */

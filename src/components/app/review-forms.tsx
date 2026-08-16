@@ -17,11 +17,17 @@ export function ResumeReviewForm({ defaultRole }: { defaultRole: string }) {
     e.preventDefault();
     setPending(true);
     setError(null);
-    const fd = new FormData(e.currentTarget);
-    const res = await reviewResumeAction(fd);
-    if (res && "error" in res) setError(res.error);
-    else if (res) setResult({ atsScore: res.atsScore, summary: res.summary });
-    setPending(false);
+    try {
+      const fd = new FormData(e.currentTarget);
+      const res = await reviewResumeAction(fd);
+      if (res && "error" in res) setError(res.error);
+      else if (res) setResult({ atsScore: res.atsScore, summary: res.summary });
+    } catch (err) {
+      console.error("[ResumeReviewForm] submit failed", err);
+      setError("Something went wrong while submitting. Please try again.");
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
@@ -107,11 +113,17 @@ export function ResumeBuilderForm({ defaultRole }: { defaultRole: string }) {
     e.preventDefault();
     setPending(true);
     setError(null);
-    const fd = new FormData(e.currentTarget);
-    const res = await buildResumeAction(fd);
-    if (res && "error" in res) setError(res.error);
-    else if (res) setResult({ atsScore: res.atsScore, summary: res.summary });
-    setPending(false);
+    try {
+      const fd = new FormData(e.currentTarget);
+      const res = await buildResumeAction(fd);
+      if (res && "error" in res) setError(res.error);
+      else if (res) setResult({ atsScore: res.atsScore, summary: res.summary });
+    } catch (err) {
+      console.error("[ResumeBuilderForm] submit failed", err);
+      setError("Something went wrong while submitting. Please try again.");
+    } finally {
+      setPending(false);
+    }
   }
 
   const field = (key: keyof typeof fields, label: string, rows = 3, placeholder = "") => (
@@ -185,14 +197,23 @@ export function ResumeBuilderForm({ defaultRole }: { defaultRole: string }) {
 export function ProfileReviewForm() {
   const [result, setResult] = useState<{ score: number } | null>(null);
   const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setPending(true);
-    const fd = new FormData(e.currentTarget);
-    const res = await reviewProfileAction(fd);
-    if (res && "ok" in res) setResult({ score: res.score });
-    setPending(false);
+    setError(null);
+    try {
+      const fd = new FormData(e.currentTarget);
+      const res = await reviewProfileAction(fd);
+      if (res && "error" in res) setError(res.error);
+      else if (res) setResult({ score: res.score });
+    } catch (err) {
+      console.error("[ProfileReviewForm] submit failed", err);
+      setError("Something went wrong while submitting. Please try again.");
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
@@ -215,6 +236,7 @@ export function ProfileReviewForm() {
           </div>
         ) : (
           <form onSubmit={onSubmit} className="space-y-4">
+            {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
             <div>
               <Label htmlFor="platform">Platform</Label>
               <Select id="platform" name="platform" defaultValue="LINKEDIN">

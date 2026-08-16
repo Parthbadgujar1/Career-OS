@@ -11,6 +11,8 @@ export async function registerEventAction(eventId: string) {
   const { profile } = await requireStudentProfile();
   const event = await prisma.event.findUnique({ where: { id: eventId } });
   if (!event) return;
+  const now = new Date();
+  if (event.endsAt && event.endsAt < now) return;
   await prisma.eventParticipation.upsert({
     where: { studentId_eventId: { studentId: profile.id, eventId } },
     create: { studentId: profile.id, eventId, status: "REGISTERED" },
@@ -63,6 +65,8 @@ export async function applyOpportunityAction(opportunityId: string) {
 
 export async function recordCodingSubmissionAction(problemId: string, status: string, code: string) {
   const { profile } = await requireStudentProfile();
+  const problem = await prisma.codingProblem.findUnique({ where: { id: problemId } });
+  if (!problem) return;
   await prisma.codingSubmission.create({
     data: {
       studentId: profile.id,

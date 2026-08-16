@@ -98,12 +98,21 @@ export interface ProjectRecommendationInput {
 }
 
 export async function recommendProjects(input: ProjectRecommendationInput) {
-  const { object } = await generateObject({
-    model: getModel(),
-    schema: projectRecommendationsSchema,
-    schemaName: "project_recommendations",
-    schemaDescription: "Skill-gap-driven project recommendations",
-    prompt: `You are the Career OS project engine. Recommend 3 portfolio projects for a student targeting "${input.role}".
+  let projects: Array<{
+    title: string;
+    description: string;
+    skillGaps: string[];
+    milestones: string[];
+  }> = [];
+
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      const { object } = await generateObject({
+        model: getModel(),
+        schema: projectRecommendationsSchema,
+        schemaName: "project_recommendations",
+        schemaDescription: "Skill-gap-driven project recommendations",
+        prompt: `You are the Career OS project engine. Recommend 3 portfolio projects for a student targeting "${input.role}".
 
 CURRENT SKILLS: ${input.skills.join(", ") || "none"}
 WEAK SKILLS TO PRACTICE: ${input.weakSkills.join(", ") || "none"}
@@ -113,7 +122,154 @@ RULES:
 2. Order from simplest to most impressive (beginner → intermediate).
 3. Projects must be buildable solo by a student in 1-3 weeks.
 4. For each project return title, 2-3 sentence description, skillGaps (skills it builds), and milestones (3-5 steps to complete it).`,
-  });
+      });
+      projects = object.projects;
+    } catch (e) {
+      console.error("[recommendProjects] AI generation failed, using fallback", e);
+    }
+  }
 
-  return object;
+  if (projects.length === 0) {
+    // Deterministic fallback recommendations based on role and weak skills
+    const role = input.role.toLowerCase();
+    const weak = input.weakSkills.map((s) => s.toLowerCase());
+
+    const fallbackProjects: Record<string, typeof projects> = {
+      "software developer": [
+        {
+          title: "Task Manager REST API",
+          description: "Build a REST API with JWT authentication, CRUD operations, and comprehensive tests. A staple backend portfolio piece.",
+          skillGaps: [...weak, "SQL", "Node.js", "Testing"],
+          milestones: [
+            "Set up Express + TypeScript project with Prisma",
+            "Design database schema for users, tasks",
+            "Implement JWT auth (register, login, middleware)",
+            "Build CRUD endpoints for tasks",
+            "Write unit/integration tests with Jest",
+            "Deploy to Railway/Render",
+          ],
+        },
+        {
+          title: "Full-Stack Notes App",
+          description: "Build a notes app with authentication, real-time sync, and offline support. Demonstrates end-to-end full-stack skills.",
+          skillGaps: [...weak, "React", "TypeScript", "WebSockets"],
+          milestones: [
+            "Set up Next.js + Prisma + PostgreSQL",
+            "Implement authentication with NextAuth",
+            "Build notes CRUD with optimistic updates",
+            "Add real-time sync with Socket.io",
+            "Implement offline support with IndexedDB",
+            "Deploy to Vercel + Railway",
+          ],
+        },
+        {
+          title: "Code Snippet Manager",
+          description: "VS Code extension + web dashboard for managing code snippets. Shows tooling and cross-platform skills.",
+          skillGaps: [...weak, "TypeScript", "VS Code API", "Electron"],
+          milestones: [
+            "Build VS Code extension with snippet storage",
+            "Create React web dashboard",
+            "Sync extension ↔ web via API",
+            "Add syntax highlighting and tagging",
+            "Package and publish extension",
+          ],
+        },
+      ],
+      "data analyst": [
+        {
+          title: "Sales Data Analysis Dashboard",
+          description: "Clean a sales dataset, run SQL + Python analysis, and present insights in an interactive dashboard.",
+          skillGaps: [...weak, "SQL", "Python", "pandas", "Visualization"],
+          milestones: [
+            "Obtain and clean sales dataset (Kaggle)",
+            "Run exploratory SQL analysis (JOINs, window functions)",
+            "Build Python/pandas analysis notebook",
+            "Create interactive dashboard with Plotly/Streamlit",
+            "Write findings report with visualizations",
+          ],
+        },
+        {
+          title: "Customer Churn Analysis",
+          description: "Analyze churn with pandas + statistics, build a logistic regression model, and write a findings report.",
+          skillGaps: [...weak, "Statistics", "Scikit-learn", "Python"],
+          milestones: [
+            "Load and explore churn dataset",
+            "Feature engineering for churn prediction",
+            "Train logistic regression model",
+            "Evaluate with precision/recall/ROC-AUC",
+            "Create executive summary dashboard",
+          ],
+        },
+      ],
+      "ai/ml engineer": [
+        {
+          title: "End-to-End ML Pipeline",
+          description: "Train a classifier on a real dataset, tune it, evaluate, and wrap it in a simple API.",
+          skillGaps: [...weak, "Python", "Scikit-learn", "FastAPI", "Docker"],
+          milestones: [
+            "Select dataset (UCI/Kaggle) and define problem",
+            "Build preprocessing pipeline",
+            "Train and tune multiple models",
+            "Build FastAPI inference endpoint",
+            "Containerize with Docker",
+          ],
+        },
+        {
+          title: "Computer Vision Project",
+          description: "Build an image classifier, document it, and push to GitHub with a clean README.",
+          skillGaps: [...weak, "PyTorch", "CNN", "Data Augmentation"],
+          milestones: [
+            "Choose dataset (CIFAR-10, Flowers, custom)",
+            "Implement CNN with PyTorch",
+            "Add data augmentation and regularization",
+            "Train, evaluate, and visualize results",
+            "Create GitHub repo with model card",
+          ],
+        },
+      ],
+      "frontend developer": [
+        {
+          title: "Responsive Landing Page",
+          description: "Build a pixel-perfect responsive landing page from a design brief.",
+          skillGaps: [...weak, "HTML", "CSS", "Tailwind", "Responsive Design"],
+          milestones: [
+            "Convert Figma/design to HTML + Tailwind",
+            "Implement responsive breakpoints",
+            "Add animations and micro-interactions",
+            "Optimize for Lighthouse 90+",
+            "Deploy to Vercel/Netlify",
+          ],
+        },
+        {
+          title: "React App with External API",
+          description: "Build a React app (e.g., a movie or weather app) that fetches and displays data from a public API.",
+          skillGaps: [...weak, "React", "TypeScript", "API Integration", "State Management"],
+          milestones: [
+            "Set up React + TypeScript + Vite",
+            "Integrate public API (TMDB, OpenWeather, etc.)",
+            "Implement search, filtering, pagination",
+            "Add error boundaries and loading states",
+            "Deploy to Vercel",
+          ],
+        },
+        {
+          title: "Full Portfolio Website",
+          description: "Your developer portfolio site showcasing all your work.",
+          skillGaps: [...weak, "Next.js", "MDX", "Contentlayer", "SEO"],
+          milestones: [
+            "Design portfolio structure and content",
+            "Build with Next.js + MDX for blog/projects",
+            "Add dark mode and animations",
+            "Optimize SEO and performance",
+            "Deploy to Vercel with custom domain",
+          ],
+        },
+      ],
+    };
+
+    const key = Object.keys(fallbackProjects).find((k) => role.includes(k)) || "software developer";
+    projects = fallbackProjects[key];
+  }
+
+  return { projects };
 }

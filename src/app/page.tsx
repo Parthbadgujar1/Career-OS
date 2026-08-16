@@ -29,6 +29,7 @@ import {
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Reveal } from "@/components/ui/reveal";
 import { READINESS_DIMENSIONS } from "@/lib/constants";
 
 const TRUST = ["Free for students", "No card required", "5-minute Day-1 setup"];
@@ -227,7 +228,7 @@ export default async function LandingPage() {
             <br />
             <span className="animate-fade-in-up delay-100">Know what to build.</span>
             <br />
-            <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 bg-clip-text text-transparent animate-fade-in-up delay-200">
+            <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 bg-clip-text text-transparent text-gradient-animated animate-fade-in-up delay-200">
               Know what to do next.
             </span>
           </h1>
@@ -260,8 +261,8 @@ export default async function LandingPage() {
         <div className="animate-slide-in-right delay-200">
           <DashboardPreview />
         </div>
-        <div className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-gradient-to-br from-indigo-200/40 to-purple-200/40 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-gradient-to-br from-cyan-200/40 to-blue-200/40 blur-3xl" />
+        <div className="pointer-events-none absolute -top-32 -right-32 h-[28rem] w-[28rem] rounded-full bg-aurora blur-3xl animate-aurora" />
+        <div className="pointer-events-none absolute -bottom-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-aurora blur-3xl animate-aurora" style={{ animationDelay: "-8s" }} />
       </section>
 
       {/* ── Stats ── */}
@@ -290,23 +291,21 @@ export default async function LandingPage() {
         </div>
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {JOURNEY.map((step, i) => (
-            <div
-              key={step.title}
-              className="group relative rounded-2xl border border-slate-100 bg-white p-6 shadow-sm card-interactive animate-fade-in-up"
-              style={{ animationDelay: `${i * 80}ms` }}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${step.gradient} text-white shadow-lg transition-transform group-hover:scale-110 group-hover:rotate-3`}>
-                  <step.icon className="h-5 w-5" />
+            <Reveal key={step.title} delay={i * 80} className="h-full">
+              <div className="group relative flex h-full flex-col rounded-2xl border border-slate-100 bg-white p-6 shadow-sm card-interactive">
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${step.gradient} text-white shadow-lg transition-transform group-hover:scale-110 group-hover:rotate-3`}>
+                    <step.icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-indigo-600">{step.when}</p>
+                    <p className="text-[11px] font-medium text-slate-400">Step {i + 1}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-indigo-600">{step.when}</p>
-                  <p className="text-[11px] font-medium text-slate-400">Step {i + 1}</p>
-                </div>
+                <h3 className="mt-3 font-bold text-slate-900">{step.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{step.text}</p>
               </div>
-              <h3 className="mt-3 font-bold text-slate-900">{step.title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{step.text}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>
@@ -324,20 +323,18 @@ export default async function LandingPage() {
           </div>
           <div className="mt-12 grid gap-5 md:grid-cols-4">
             {PHASES.map((p, i) => (
-              <div
-                key={p.name}
-                className="group rounded-2xl border border-slate-100 bg-white p-6 shadow-sm card-interactive animate-fade-in-up"
-                style={{ animationDelay: `${i * 100}ms` }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${p.color} transition-transform group-hover:scale-110`}>
-                    <p.icon className="h-5 w-5" />
+              <Reveal key={p.name} delay={i * 100} className="h-full">
+                <div className="group flex h-full flex-col rounded-2xl border border-slate-100 bg-white p-6 shadow-sm card-interactive">
+                  <div className="flex items-center justify-between">
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${p.color} transition-transform group-hover:scale-110`}>
+                      <p.icon className="h-5 w-5" />
+                    </div>
+                    <span className="text-[11px] font-medium text-slate-400">{p.label}</span>
                   </div>
-                  <span className="text-[11px] font-medium text-slate-400">{p.label}</span>
+                  <h3 className="mt-3 text-lg font-bold">{p.name}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{p.text}</p>
                 </div>
-                <h3 className="mt-3 text-lg font-bold">{p.name}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{p.text}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
           <div className="mt-8 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50 p-6 animate-fade-in-up delay-400">
@@ -362,17 +359,15 @@ export default async function LandingPage() {
         </div>
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {MODULES.map((m, i) => (
-            <div
-              key={m.title}
-              className="group relative flex flex-col rounded-2xl border border-slate-100 bg-white p-5 shadow-sm card-interactive overflow-hidden animate-fade-in-up"
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${m.gradient} text-white shadow-md transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg`}>
-                <m.icon className="h-5 w-5" />
+            <Reveal key={m.title} delay={(i % 3) * 80} className="h-full">
+              <div className="group relative flex h-full flex-col rounded-2xl border border-slate-100 bg-white p-5 shadow-sm card-interactive overflow-hidden">
+                <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${m.gradient} text-white shadow-md transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg`}>
+                  <m.icon className="h-5 w-5" />
+                </div>
+                <h3 className="mt-3 font-bold text-slate-900">{m.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{m.text}</p>
               </div>
-              <h3 className="mt-3 font-bold text-slate-900">{m.title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{m.text}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>
@@ -390,14 +385,12 @@ export default async function LandingPage() {
             </p>
             <div className="mt-6 space-y-2">
               {READINESS_DIMENSIONS.map((d, i) => (
-                <div
-                  key={d.key}
-                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-white px-4 py-2.5 shadow-sm transition-all hover:border-indigo-200 hover:shadow-md animate-fade-in-up"
-                  style={{ animationDelay: `${i * 50}ms` }}
-                >
-                  <span className="text-sm font-medium text-slate-700">{d.label}</span>
-                  <span className="text-sm font-bold text-indigo-600">{d.weight}%</span>
-                </div>
+                <Reveal key={d.key} delay={i * 50}>
+                  <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-white px-4 py-2.5 shadow-sm transition-all hover:border-indigo-200 hover:shadow-md hover:translate-x-0.5">
+                    <span className="text-sm font-medium text-slate-700">{d.label}</span>
+                    <span className="text-sm font-bold text-indigo-600">{d.weight}%</span>
+                  </div>
+                </Reveal>
               ))}
             </div>
             <p className="mt-3 text-xs text-slate-400">Weights shown are the default — configurable per role and institution.</p>
@@ -458,22 +451,20 @@ export default async function LandingPage() {
         </div>
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {GATEWAYS.map((g, i) => (
-            <div
-              key={g.name}
-              className="group flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:border-slate-200 hover:shadow-lg animate-fade-in-up"
-              style={{ animationDelay: `${i * 80}ms` }}
-            >
-              <div
-                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-base font-bold text-white shadow-md transition-transform group-hover:scale-110 group-hover:rotate-3`}
-                style={{ backgroundColor: g.color }}
-              >
-                {g.name.charAt(0)}
+            <Reveal key={g.name} delay={(i % 3) * 80} className="h-full">
+              <div className="group flex h-full items-center gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:border-slate-200 hover:shadow-lg hover:-translate-y-0.5">
+                <div
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-base font-bold text-white shadow-md transition-transform group-hover:scale-110 group-hover:rotate-3`}
+                  style={{ backgroundColor: g.color }}
+                >
+                  {g.name.charAt(0)}
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900">{g.name}</p>
+                  <p className="text-xs leading-relaxed text-slate-500">{g.text}</p>
+                </div>
               </div>
-              <div>
-                <p className="font-bold text-slate-900">{g.name}</p>
-                <p className="text-xs leading-relaxed text-slate-500">{g.text}</p>
-              </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>
@@ -497,16 +488,14 @@ export default async function LandingPage() {
               { value: "12", label: "Need support", gradient: "from-amber-500 to-orange-500" },
               { value: "9", label: "Skill gaps tracked", gradient: "from-rose-500 to-pink-500" },
             ].map((s, i) => (
-              <div
-                key={s.label}
-                className="group rounded-2xl border border-slate-100 bg-white p-5 text-center shadow-sm card-interactive animate-fade-in-up"
-                style={{ animationDelay: `${i * 80}ms` }}
-              >
-                <p className={`text-3xl font-extrabold bg-gradient-to-r ${s.gradient} bg-clip-text text-transparent transition-transform group-hover:scale-110`}>
-                  {s.value}
-                </p>
-                <p className="mt-1 text-xs font-medium text-slate-500">{s.label}</p>
-              </div>
+              <Reveal key={s.label} delay={i * 80} className="h-full">
+                <div className="group flex h-full flex-col justify-center rounded-2xl border border-slate-100 bg-white p-5 text-center shadow-sm card-interactive">
+                  <p className={`text-3xl font-extrabold bg-gradient-to-r ${s.gradient} bg-clip-text text-transparent transition-transform group-hover:scale-110`}>
+                    {s.value}
+                  </p>
+                  <p className="mt-1 text-xs font-medium text-slate-500">{s.label}</p>
+                </div>
+              </Reveal>
             ))}
           </div>
           <div className="mt-8 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm animate-fade-in-up delay-400">
@@ -521,7 +510,7 @@ export default async function LandingPage() {
                 </thead>
                 <tbody>
                   {SIGNALS.map((row, i) => (
-                    <tr key={row.name} className="border-b border-slate-50 last:border-0 transition-colors hover:bg-slate-50/50" style={{ animationDelay: `${i * 50}ms` }}>
+                    <Reveal as="tr" key={row.name} delay={i * 60} className="border-b border-slate-50 last:border-0 transition-colors hover:bg-slate-50/50">
                       <td className="px-5 py-3">
                         <p className="font-semibold text-slate-900">{row.name}</p>
                         <p className="text-xs text-slate-400">{row.role}</p>
@@ -537,7 +526,7 @@ export default async function LandingPage() {
                       <td className="px-5 py-3">
                         <Badge variant={badgeVariant(row.tone)}>{row.signal}</Badge>
                       </td>
-                    </tr>
+                    </Reveal>
                   ))}
                 </tbody>
               </table>
@@ -559,25 +548,23 @@ export default async function LandingPage() {
         </div>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           {TESTIMONIALS.map((t, i) => (
-            <div
-              key={t.author}
-              className="group relative flex flex-col rounded-2xl border border-slate-100 bg-white p-6 shadow-sm card-interactive animate-fade-in-up"
-              style={{ animationDelay: `${i * 100}ms` }}
-            >
-              <div className="absolute -top-3 left-6 text-4xl text-slate-200 font-serif">&ldquo;</div>
-              <p className="flex-1 pt-4 text-sm leading-relaxed text-slate-600">{t.quote}</p>
-              <div className="mt-5 border-t border-slate-100 pt-4">
-                <div className="flex items-center gap-3">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br ${t.color} text-sm font-bold text-white shadow-md transition-transform group-hover:scale-110`}>
-                    {t.author}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">{t.role}</p>
-                    <p className="text-xs text-slate-400">{t.target}</p>
+            <Reveal key={t.author} delay={i * 100} className="h-full">
+              <div className="group relative flex h-full flex-col rounded-2xl border border-slate-100 bg-white p-6 shadow-sm card-interactive">
+                <div className="absolute -top-3 left-6 text-4xl text-slate-200 font-serif">&ldquo;</div>
+                <p className="flex-1 pt-4 text-sm leading-relaxed text-slate-600">{t.quote}</p>
+                <div className="mt-5 border-t border-slate-100 pt-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br ${t.color} text-sm font-bold text-white shadow-md transition-transform group-hover:scale-110`}>
+                      {t.author}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">{t.role}</p>
+                      <p className="text-xs text-slate-400">{t.target}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>

@@ -234,7 +234,12 @@ export async function completeTask(prisma: PrismaClient, studentId: string, task
   const task = await prisma.task.findFirst({ where: { id: taskId, studentId } });
   if (!task) throw new Error("Task not found");
   if (task.roadmapItemId) {
-    await prisma.roadmapItem.update({ where: { id: task.roadmapItemId }, data: { status: "COMPLETED" } });
+    // The item may have been cascade-deleted when the roadmap was regenerated
+    // or the path was changed; updateMany is a safe no-op in that case.
+    await prisma.roadmapItem.updateMany({
+      where: { id: task.roadmapItemId },
+      data: { status: "COMPLETED" },
+    });
   }
   return prisma.task.update({
     where: { id: taskId },

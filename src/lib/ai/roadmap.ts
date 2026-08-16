@@ -56,3 +56,63 @@ RULES
 
   return object;
 }
+
+const phaseSchema = z.object({
+  phase: z.number().int().min(1),
+  weekStart: z.number().int().min(1),
+  weekEnd: z.number().int().min(1),
+  title: z.string(),
+  description: z.string(),
+  focus: z.enum(["LEARNING", "CODING", "PROJECT", "PROFILE", "INTERVIEW", "OPPORTUNITY"]),
+});
+
+const longPlanSchema = z.object({
+  title: z.string(),
+  summary: z.string(),
+  phases: z.array(phaseSchema).min(4).max(24),
+});
+
+export interface LongTermPhase {
+  phase: number;
+  weekStart: number;
+  weekEnd: number;
+  title: string;
+  description: string;
+  focus: "LEARNING" | "CODING" | "PROJECT" | "PROFILE" | "INTERVIEW" | "OPPORTUNITY";
+}
+
+/**
+ * Generates a phase-based plan for long horizons (1/2/4 years). Each phase spans
+ * multiple weeks; the engine expands phases into weekly milestones so the
+ * roadmap page works identically for every duration.
+ */
+export async function generateLongTermPlan(
+  input: RoadmapInput,
+  totalWeeks: number
+): Promise<{ title: string; summary: string; phases: LongTermPhase[] }> {
+  const { object } = await generateObject({
+    model: getModel(),
+    schema: longPlanSchema,
+    schemaName: "career_long_term_plan",
+    schemaDescription: "A phased long-term career plan for a student",
+    prompt: `You are the Career OS engine. Build a personalized long-term plan of ${totalWeeks} weeks (about ${Math.round(totalWeeks / 52 * 10) / 10} year(s)) for a student targeting a career role.
+
+STUDENT PROFILE
+- Degree: ${input.degree} (${input.specialization || "no specialization"})
+- Year: ${input.year}
+- Target role: ${input.targetRole}
+- Interests: ${input.interests.join(", ") || "not specified"}
+- Weekly hours available: ${input.weeklyHours}
+- Current skills (name: self-rating 1-5): ${input.skills.map((s) => `${s.name}:${s.rating}`).join(", ") || "none"}
+- Weak areas: ${input.weakSkills.join(", ") || "none"}
+
+RULES
+1. Divide the ${totalWeeks} weeks into 4 to 24 phases. Each phase must have a weekStart and weekEnd covering 1..${totalWeeks} with no gaps or overlaps (phase N must start right after phase N-1 ends).
+2. Order is beginner → intermediate → advanced, prerequisite-aware. Build weak skills first.
+3. Vary the focus across LEARNING, CODING, PROJECT, PROFILE, INTERVIEW and OPPORTUNITY so the plan is well rounded.
+4. Every phase title and description must be actionable and measurable for the given role.
+5. Keep phases coarse for long horizons (a phase can span many weeks) but every week from 1 to ${totalWeeks} must be covered by exactly one phase.`,
+  });
+
+  return object;
+}

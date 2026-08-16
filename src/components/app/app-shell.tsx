@@ -5,50 +5,115 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   LayoutDashboard,
-  ListTodo,
+  CalendarClock,
   Map,
-  ClipboardCheck,
-  FileText,
+  Brain,
   FolderGit2,
+  FileText,
   Code2,
+  ClipboardCheck,
   FileQuestion,
   Mic2,
-  ExternalLink,
+  Briefcase,
+  Calendar,
+  FolderOpen,
   BarChart3,
-  Target,
+  Trophy,
+  Users,
+  Bot,
+  Settings,
+  HelpCircle,
   LogOut,
   Menu,
   X,
   Sparkles,
+  ChevronDown,
+  ChevronRight,
+  Bell,
+  Timer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const NAV = [
-  { href: "/app", label: "Overview", icon: LayoutDashboard, exact: true },
-  { href: "/app/tasks", label: "Today's Tasks", icon: ListTodo },
-  { href: "/app/roadmap", label: "Roadmap", icon: Map },
-  { href: "/app/assessment", label: "Assessment", icon: ClipboardCheck },
-  { href: "/app/reviews", label: "Resume & Profiles", icon: FileText },
-  { href: "/app/projects", label: "Projects", icon: FolderGit2 },
-  { href: "/app/coding", label: "Coding Practice", icon: Code2 },
-  { href: "/app/placement", label: "Placement Prep", icon: Target },
-  { href: "/app/quizzes", label: "Quizzes", icon: FileQuestion },
-  { href: "/app/interviews", label: "Mock Interviews", icon: Mic2 },
-  { href: "/app/opportunities", label: "Opportunities", icon: ExternalLink },
-  { href: "/app/reports", label: "Weekly Reports", icon: BarChart3 },
+const NAV_GROUPS = [
+  {
+    group: "HOME",
+    items: [
+      { href: "/app", label: "Overview", icon: LayoutDashboard, exact: true },
+      { href: "/app/tasks", label: "Today's Plan", icon: CalendarClock },
+      { href: "/app/notifications", label: "Notifications", icon: Bell },
+    ],
+  },
+  {
+    group: "BUILD",
+    items: [
+      { href: "/app/roadmap", label: "Career Roadmap", icon: Map },
+      { href: "/app/skills", label: "Skills", icon: Brain },
+      { href: "/app/projects", label: "Projects", icon: FolderGit2 },
+      { href: "/app/reviews", label: "Resume & Profile", icon: FileText },
+    ],
+  },
+  {
+    group: "PRACTICE",
+    items: [
+      { href: "/app/coding", label: "Coding", icon: Code2 },
+      { href: "/app/assessment", label: "Assessments", icon: ClipboardCheck },
+      { href: "/app/quizzes", label: "Quizzes", icon: FileQuestion },
+      { href: "/app/progress-test", label: "Progress Tests", icon: Timer },
+      { href: "/app/interviews", label: "Mock Interviews", icon: Mic2 },
+    ],
+  },
+  {
+    group: "OPPORTUNITIES",
+    items: [
+      { href: "/app/opportunities", label: "Jobs & Internships", icon: Briefcase },
+      { href: "/app/events", label: "Events", icon: Calendar },
+      { href: "/app/applications", label: "Applications", icon: FolderOpen },
+    ],
+  },
+  {
+    group: "GROWTH",
+    items: [
+      { href: "/app/reports", label: "Weekly Reports", icon: BarChart3 },
+      { href: "/app/achievements", label: "Achievements", icon: Trophy },
+      { href: "/app/mentor", label: "Mentor", icon: Users },
+    ],
+  },
+];
+
+const BOTTOM_ACTIONS = [
+  { href: "/app/coach", label: "AI Career Coach", icon: Bot, primary: true },
+  { href: "/app/settings", label: "Settings", icon: Settings },
+  { href: "/help", label: "Help", icon: HelpCircle },
 ];
 
 export function AppShell({
   children,
   user,
   signOutAction,
+  notificationCount = 0,
 }: {
   children: React.ReactNode;
   user: { name: string; role: string; email: string };
   signOutAction: () => Promise<void>;
+  notificationCount?: number;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(
+    NAV_GROUPS.map((g) => g.group)
+  );
+
+  const toggleGroup = (group: string) => {
+    setExpandedGroups((prev) =>
+      prev.includes(group) ? prev.filter((g) => g !== group) : [...prev, group]
+    );
+  };
+
+  const isActive = (href: string, exact?: boolean): boolean =>
+    exact ? pathname === href : pathname.startsWith(href);
+
+  const groupHasActive = (items: typeof NAV_GROUPS[0]["items"]): boolean =>
+    items.some((item) => isActive(item.href, item.exact));
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -81,48 +146,102 @@ export function AppShell({
           </button>
         </div>
 
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
-          {NAV.map((item, i) => {
-            const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
-            return (
+        <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-3">
+          {NAV_GROUPS.map((group, gi) => (
+            <div key={group.group} className="animate-fade-in-up" style={{ animationDelay: `${gi * 50}ms` }}>
+              <button
+                onClick={() => toggleGroup(group.group)}
+                className="flex w-full items-center justify-between px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <span>{group.group}</span>
+                <span className="flex items-center gap-1">
+                  {groupHasActive(group.items) && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-indigo-600" />
+                  )}
+                  {expandedGroups.includes(group.group) ? (
+                    <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+                  )}
+                </span>
+              </button>
+              {expandedGroups.includes(group.group) && (
+                <div className="mt-1 space-y-0.5 animate-slide-in-up">
+                  {group.items.map((item, ii) => {
+                    const active = isActive(item.href, item.exact);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileOpen(false)}
+                        className={cn(
+                          "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 active:scale-[0.98]",
+                          active
+                            ? "bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100"
+                            : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                        )}
+                        style={{ animationDelay: `${ii * 30}ms` }}
+                      >
+                        <item.icon
+                          className={cn(
+                            "h-4 w-4 transition-all duration-200",
+                            active ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"
+                          )}
+                        />
+                        {item.label}
+                        {item.href === "/app/notifications" && notificationCount > 0 && (
+                          <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                            {notificationCount}
+                          </span>
+                        )}
+                        {active && (
+                          <div className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-600 animate-scale-in" />
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
+
+          <div className="pt-4 border-t border-slate-100 mt-4">
+            {BOTTOM_ACTIONS.map((action, i) => (
               <Link
-                key={item.href}
-                href={item.href}
+                key={action.href}
+                href={action.href}
                 onClick={() => setMobileOpen(false)}
                 className={cn(
                   "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                  active
-                    ? "bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                  action.primary
+                    ? "btn-shine bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97]"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98]"
                 )}
-                style={{ animationDelay: `${i * 30}ms` }}
+                style={{ animationDelay: `${(NAV_GROUPS.length + i) * 50}ms` }}
               >
-                <item.icon
+                <action.icon
                   className={cn(
                     "h-4 w-4 transition-all duration-200",
-                    active ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"
+                    action.primary
+                      ? "text-white group-hover:scale-110"
+                      : "text-slate-400 group-hover:text-slate-600"
                   )}
                 />
-                {item.label}
-                {active && (
-                  <div className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-600 animate-scale-in" />
-                )}
+                {action.label}
               </Link>
-            );
-          })}
-        </nav>
+            ))}
 
-        <div className="border-t border-slate-100 px-3 py-3">
-          <form action={signOutAction}>
-            <button
-              type="submit"
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-all duration-200"
-            >
-              <LogOut className="h-4 w-4" />
-              Sign out
-            </button>
-          </form>
-        </div>
+            <form action={signOutAction} className="mt-2">
+              <button
+                type="submit"
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-all duration-200"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </button>
+            </form>
+          </div>
+        </nav>
       </aside>
 
       <div className="flex min-h-screen flex-1 flex-col md:pl-64">

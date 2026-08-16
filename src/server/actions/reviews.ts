@@ -202,7 +202,18 @@ export async function recommendProjectsAction(): Promise<{ ok: true; count: numb
     weakSkills: weak,
   });
 
+  // Regenerate: replace previous suggested (un-started) recommendations so
+  // repeated clicks never accumulate duplicates.
+  await prisma.projectRecommendation.deleteMany({
+    where: { studentId: profile.id, status: "SUGGESTED" },
+  });
+
+  let count = 0;
   for (const p of projects.projects) {
+    const alreadyStarted = await prisma.projectRecommendation.findFirst({
+      where: { studentId: profile.id, title: p.title, status: { in: ["STARTED", "COMPLETED"] } },
+    });
+    if (alreadyStarted) continue;
     await prisma.projectRecommendation.create({
       data: {
         studentId: profile.id,
@@ -212,9 +223,10 @@ export async function recommendProjectsAction(): Promise<{ ok: true; count: numb
         milestones: JSON.stringify(p.milestones),
       },
     });
+    count++;
   }
   revalidatePath("/app/projects");
-  return { ok: true, count: projects.projects.length };
+  return { ok: true, count };
 }
 
 export async function createProjectAction(formData: FormData) {
@@ -232,6 +244,10 @@ export async function createProjectAction(formData: FormData) {
 
 export async function updateProjectStatusAction(projectId: string, status: string) {
   const { profile } = await requireStudentProfile();
+  const project = await prisma.project.findUnique({ where: { id: projectId } });
+  if (!project || project.studentId !== profile.id) {
+    return;
+  }
   await prisma.project.update({
     where: { id: projectId },
     data: { status },

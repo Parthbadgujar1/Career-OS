@@ -20,6 +20,7 @@ model User {
 
   studentProfile  StudentProfile?
   mentorStudents  StudentProfile[] @relation("MentorStudents")
+  interviewSlots  InterviewSlot[] @relation("InterviewSlots")
 }
 
 model StudentProfile {
@@ -31,12 +32,14 @@ model StudentProfile {
   degree            String? // B.Tech, B.Sc, BCA, BBA, MBA, MCA, M.Tech, M.Sc ...
   specialization    String?
   year              String? // 1st, 2nd, 3rd, 4th, Final
-  targetRole        String? // Software Developer, Data Analyst, AI/ML Engineer ...
+  targetRole        String? // Primary target role (first selected)
+  targetRoles       String   @default("[]") // JSON array of all selected target roles
   interests         String   @default("[]") // JSON array of interests
   weeklyHours       Int      @default(8)
   preferredIndustries String @default("[]") // JSON array
   onboardedAt       DateTime?
   assessmentComplete Boolean  @default(false)
+  nextProgressTestDueAt DateTime?
   readinessScore    Int      @default(0)
   githubUrl         String?
   linkedinUrl       String?
@@ -64,6 +67,20 @@ model StudentProfile {
   notifications           Notification[]
   readinessSnapshots      ReadinessSnapshot[]
   interviews              MockInterview[]
+  progressTestAttempts    ProgressTestAttempt[]
+  interviewBookings       InterviewBooking[]
+}
+
+model ProgressTestAttempt {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  difficulty  String // EASY | MEDIUM | HARD
+  score       Int
+  maxScore    Int
+  timeSpentSec Int    @default(0)
+  answers     String   @default("{}") // JSON
+  completedAt DateTime @default(now())
 }
 
 model Skill {
@@ -351,14 +368,52 @@ model MockInterview {
   id          String   @id @default(cuid())
   studentId   String
   student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  type        String   // TECHNICAL | HR | BEHAVIORAL
+  type        String   // TECHNICAL | HR | BEHAVIORAL | AI
+  mode        String   @default("SELF") // SELF | AI | MENTOR_MEET
   role        String?
   score       Int?
   maxScore    Int?
+  criteriaScores String @default("{}") // JSON of criterion -> score
+  skillCoverage String @default("[]") // JSON of skills assessed
   transcript  String?
   feedback    String   @default("[]") // JSON
   weakAreas   String   @default("[]") // JSON
+  evaluatorName String?
+  meetUrl     String?
+  difficulty  String?
+  durationSec Int      @default(0)
   createdAt   DateTime @default(now())
+}
+
+model InterviewSlot {
+  id         String   @id @default(cuid())
+  mentorId   String
+  mentor     User     @relation("InterviewSlots", fields: [mentorId], references: [id], onDelete: Cascade)
+  title      String
+  type       String   @default("TECHNICAL") // TECHNICAL | HR | BEHAVIORAL
+  startAt    DateTime
+  endAt      DateTime?
+  meetUrl    String?
+  status     String   @default("AVAILABLE") // AVAILABLE | BOOKED | COMPLETED | CANCELLED
+  maxStudents Int     @default(1)
+  createdAt  DateTime @default(now())
+
+  bookings InterviewBooking[]
+}
+
+model InterviewBooking {
+  id        String   @id @default(cuid())
+  slotId    String
+  slot      InterviewSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status    String   @default("BOOKED") // BOOKED | COMPLETED | CANCELLED
+  score     Int?
+  maxScore  Int?
+  feedback  String   @default("[]") // JSON
+  createdAt DateTime @default(now())
+
+  @@unique([slotId, studentId])
 }
 
 // ============ READINESS & NOTIFICATIONS ============

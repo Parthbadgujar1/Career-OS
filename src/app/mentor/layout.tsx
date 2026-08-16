@@ -1,19 +1,18 @@
 import { requireMentor } from "@/lib/auth-helper";
+import { PortalShell } from "@/components/portal-shell";
+import { signOutAction } from "@/server/actions/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function MentorLayout({ children }: { children: React.ReactNode }) {
-  await requireMentor();
+  const user = await requireMentor();
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-          <p className="text-sm font-semibold">
-            Career OS <span className="font-normal text-slate-400">· Mentor</span>
-          </p>
-        </div>
-      </header>
+    <PortalShell
+      portal="mentor"
+      user={{ name: user.name ?? "", email: user.email ?? "", role: user.role }}
+      signOutAction={signOutAction}
+    >
       {children}
-    </div>
+    </PortalShell>
   );
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, CalendarCheck, ListTodo, TrendingUp, Sparkles, Target, Map } from "lucide-react";
+import { ArrowRight, CalendarCheck, ListTodo, TrendingUp, Sparkles, Target, Map, RefreshCw } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
 import { computeReadiness, readinessLabel } from "@/lib/scoring/readiness";
@@ -10,6 +10,8 @@ import { fromJson, formatDate, weekLabel } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge, Progress } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Reveal } from "@/components/ui/reveal";
+import { changePathAction } from "@/server/actions/onboarding";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +26,7 @@ export default async function OverviewPage() {
 
   if (!profile.onboardedAt) redirect("/app/assessment");
 
-  const [readiness, tasks, latestReport, notifications, roadmap] = await Promise.all([
+  const [readiness, tasks, latestReport, notifications, roadmap, progressAttempts] = await Promise.all([
     computeReadiness(prisma, profile.id),
     ensureDailyTasks(prisma, profile.id),
     prisma.weeklyReport.findFirst({
@@ -37,6 +39,11 @@ export default async function OverviewPage() {
       take: 5,
     }),
     prisma.roadmap.findUnique({ where: { studentId: profile.id }, include: { items: true } }),
+    prisma.progressTestAttempt.findMany({
+      where: { studentId: profile.id },
+      orderBy: { completedAt: "desc" },
+      take: 2,
+    }),
   ]);
 
   const streak = await bumpStreak(prisma, profile.id);
@@ -44,6 +51,13 @@ export default async function OverviewPage() {
   const pendingCount = tasks.filter((t) => t.status === "PENDING").length;
   const completedToday = tasks.filter((t) => t.status === "COMPLETED").length;
   const readinessMeta = readinessLabel(readiness.total);
+
+  const lastTest = progressAttempts[0];
+  const prevTest = progressAttempts[1];
+  const testTrend =
+    lastTest && prevTest ? Math.round((lastTest.score / lastTest.maxScore) * 100) - Math.round((prevTest.score / prevTest.maxScore) * 100) : null;
+  const testDue = profile.nextProgressTestDueAt;
+  const testOverdue = testDue && testDue < new Date() ? true : false;
 
   const currentWeek = roadmap ? currentRoadmapWeek(roadmap.createdAt, roadmap.totalWeeks) : 0;
   const weekItems = roadmap ? roadmap.items.filter((i) => i.weekNumber === currentWeek) : [];
@@ -64,12 +78,20 @@ export default async function OverviewPage() {
             ) : "Complete onboarding to set your goal."}
           </p>
         </div>
-        <Link href="/app/tasks">
-          <Button variant="gradient" size="sm" className="group">
-            <ListTodo className="h-4 w-4" /> Open today&apos;s tasks
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <form action={changePathAction}>
+            <Button type="submit" variant="ghost" size="sm" className="text-slate-500 hover:text-amber-600 hover:bg-amber-50">
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+              Change path
+            </Button>
+          </form>
+          <Link href="/app/tasks">
+            <Button variant="gradient" size="sm" className="group">
+              <ListTodo className="h-4 w-4" /> Open today&apos;s tasks
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -155,90 +177,137 @@ export default async function OverviewPage() {
         </Card>
       </div>
 
+      <Link href="/app/progress-test" className="block group">
+        <Card
+          className={`overflow-hidden transition-all hover:shadow-md animate-fade-in-up ${
+            testOverdue ? "border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50" : "border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50"
+          }`}
+        >
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
+            <div className="flex items-center gap-3">
+              <span
+                className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                  testOverdue ? "bg-amber-100 text-amber-600" : "bg-indigo-100 text-indigo-600"
+                }`}
+              >
+                <TrendingUp className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-sm font-bold text-slate-800">
+                  {testOverdue
+                    ? "Progress test is due — retest your readiness now"
+                    : lastTest
+                      ? "Ready for your next progress test"
+                      : "Start your first progress test"}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {testDue
+                    ? `${testOverdue ? "Was due" : "Due"} ${formatDate(testDue)} · 30 timed questions · auto-graded`
+                    : "30 timed questions · auto-graded · re-measures your readiness"}
+                  {lastTest
+                    ? ` · Last score ${Math.round((lastTest.score / lastTest.maxScore) * 100)}/100${
+                        testTrend !== null ? (testTrend >= 0 ? ` (+${testTrend})` : ` (${testTrend})`) : ""
+                      }`
+                    : ""}
+                </p>
+              </div>
+            </div>
+            <span className="flex items-center gap-1 text-sm font-semibold text-indigo-600 group-hover:text-indigo-700">
+              Take the test <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </CardContent>
+        </Card>
+      </Link>
+
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <Card className="animate-fade-in-up delay-200">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-indigo-500" />
-                  Readiness breakdown
-                </CardTitle>
-                <Link href="/app/reports" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">
-                  Why this score?
-                </Link>
-              </div>
-              <CardDescription>Every point is evidence-based and explainable.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {READINESS_DIMENSIONS.map((dim, i) => (
-                <div key={dim.key} className="animate-fade-in-up" style={{ animationDelay: `${300 + i * 40}ms` }}>
-                  <div className="mb-1.5 flex items-center justify-between text-sm">
-                    <span className="font-medium text-slate-600">{dim.label}</span>
-                    <span className="font-bold text-slate-800">
-                      {readiness.dimensions[dim.key]}/100 <span className="text-xs text-slate-400">· {dim.weight}%</span>
-                    </span>
-                  </div>
-                  <Progress value={readiness.dimensions[dim.key]} />
+          <Reveal variant="up">
+            <Card className="h-full">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-indigo-500" />
+                    Readiness breakdown
+                  </CardTitle>
+                  <Link href="/app/reports" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">
+                    Why this score?
+                  </Link>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="animate-fade-in-up delay-300">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CalendarCheck className="h-4 w-4 text-emerald-500" />
-                Today&apos;s plan
-              </CardTitle>
-              <CardDescription>{weekLabel()}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {tasks.length === 0 && (
-                <p className="text-sm text-slate-500">No tasks generated yet.</p>
-              )}
-              {tasks.slice(0, 5).map((t, i) => (
-                <div
-                  key={t.id}
-                  className="flex items-center justify-between rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:border-indigo-100 hover:bg-indigo-50/30 animate-fade-in-up"
-                  style={{ animationDelay: `${350 + i * 50}ms` }}
-                >
-                  <div className="flex items-center gap-2.5">
-                    {t.status === "COMPLETED" ? (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-[10px] font-bold">✓</span>
-                    ) : (
-                      <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
-                        t.priority === "HIGH" ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-400"
-                      }`}>
-                        {t.priority === "HIGH" ? "!" : "•"}
+                <CardDescription>Every point is evidence-based and explainable.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {READINESS_DIMENSIONS.map((dim, i) => (
+                  <div key={dim.key} className="animate-fade-in-up" style={{ animationDelay: `${300 + i * 40}ms` }}>
+                    <div className="mb-1.5 flex items-center justify-between text-sm">
+                      <span className="font-medium text-slate-600">{dim.label}</span>
+                      <span className="font-bold text-slate-800">
+                        {readiness.dimensions[dim.key]}/100 <span className="text-xs text-slate-400">· {dim.weight}%</span>
                       </span>
-                    )}
-                    <span
-                      className={
-                        t.status === "COMPLETED" ? "text-sm text-slate-400 line-through" : "text-sm font-medium text-slate-700"
-                      }
-                    >
-                      {t.title}
-                    </span>
+                    </div>
+                    <Progress value={readiness.dimensions[dim.key]} />
                   </div>
-                  <Badge variant="secondary" className="text-[10px]">{CATEGORY_LABELS[t.category as keyof typeof CATEGORY_LABELS]}</Badge>
-                </div>
-              ))}
-              <Link href="/app/tasks" className="flex items-center gap-1 pt-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors group">
-                Manage tasks <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            </CardContent>
-          </Card>
+                ))}
+              </CardContent>
+            </Card>
+          </Reveal>
+
+          <Reveal variant="up" delay={80}>
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarCheck className="h-4 w-4 text-emerald-500" />
+                  Today&apos;s plan
+                </CardTitle>
+                <CardDescription>{weekLabel()}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {tasks.length === 0 && (
+                  <p className="text-sm text-slate-500">No tasks generated yet.</p>
+                )}
+                {tasks.slice(0, 5).map((t, i) => (
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:border-indigo-100 hover:bg-indigo-50/30 animate-fade-in-up"
+                    style={{ animationDelay: `${350 + i * 50}ms` }}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      {t.status === "COMPLETED" ? (
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-[10px] font-bold">✓</span>
+                      ) : (
+                        <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
+                          t.priority === "HIGH" ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-400"
+                        }`}>
+                          {t.priority === "HIGH" ? "!" : "•"}
+                        </span>
+                      )}
+                      <span
+                        className={
+                          t.status === "COMPLETED" ? "text-sm text-slate-400 line-through" : "text-sm font-medium text-slate-700"
+                        }
+                      >
+                        {t.title}
+                      </span>
+                    </div>
+                    <Badge variant="secondary" className="text-[10px]">{CATEGORY_LABELS[t.category as keyof typeof CATEGORY_LABELS]}</Badge>
+                  </div>
+                ))}
+                <Link href="/app/tasks" className="flex items-center gap-1 pt-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors group">
+                  Manage tasks <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              </CardContent>
+            </Card>
+          </Reveal>
         </div>
 
         <div className="space-y-6">
-          <Card className="animate-slide-in-right delay-200">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-indigo-500" />
-                Latest weekly report
-              </CardTitle>
-            </CardHeader>
+          <Reveal variant="right">
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-indigo-500" />
+                  Latest weekly report
+                </CardTitle>
+              </CardHeader>
             <CardContent>
               {latestReport ? (
                 <div className="space-y-3">
@@ -273,30 +342,33 @@ export default async function OverviewPage() {
                 </p>
               )}
             </CardContent>
-          </Card>
+            </Card>
+          </Reveal>
 
-          <Card className="animate-slide-in-right delay-300">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-purple-500" />
-                Updates
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {notifications.length === 0 && (
-                <p className="text-sm text-slate-500">No notifications yet.</p>
-              )}
-              {notifications.map((n, i) => (
-                <div key={n.id} className="rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:border-indigo-100 hover:bg-indigo-50/30 animate-fade-in-up" style={{ animationDelay: `${i * 50}ms` }}>
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-3.5 w-3.5 text-indigo-500" />
-                    <p className="text-sm font-semibold">{n.title}</p>
+          <Reveal variant="right" delay={100}>
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-purple-500" />
+                  Updates
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {notifications.length === 0 && (
+                  <p className="text-sm text-slate-500">No notifications yet.</p>
+                )}
+                {notifications.map((n, i) => (
+                  <div key={n.id} className="rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:border-indigo-100 hover:bg-indigo-50/30 animate-fade-in-up" style={{ animationDelay: `${i * 50}ms` }}>
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-3.5 w-3.5 text-indigo-500" />
+                      <p className="text-sm font-semibold">{n.title}</p>
+                    </div>
+                    {n.body && <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">{n.body}</p>}
                   </div>
-                  {n.body && <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">{n.body}</p>}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+                ))}
+              </CardContent>
+            </Card>
+          </Reveal>
         </div>
       </div>
     </div>

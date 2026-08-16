@@ -270,6 +270,491 @@ export const COMMUNICATION_QUESTIONS: AssessmentQuestion[] = [
   },
 ];
 
+// ============ BUSINESS DEGREES: MARKETING ============
+
+export const MARKETING_QUESTIONS: AssessmentQuestion[] = [
+  {
+    id: "m1",
+    question: "What are the 4Ps of the marketing mix?",
+    options: ["People, Process, Physical, Promotion", "Product, Price, Place, Promotion", "Planning, Pricing, Positioning, Producing", "Profit, Product, Promotion, Place"],
+    answer: 1,
+    topic: "Marketing Fundamentals",
+  },
+  {
+    id: "m2",
+    question: "What does SWOT analysis evaluate?",
+    options: [
+      "Sales, Workforce, Output, Transactions",
+      "Strengths, Weaknesses, Opportunities, Threats",
+      "Strategy, Workflow, Organization, Targets",
+      "Supply, Warehousing, Order, Transport",
+    ],
+    answer: 1,
+    topic: "Strategic Marketing",
+  },
+  {
+    id: "m3",
+    question: "What is brand positioning?",
+    options: [
+      "Where the brand logo is placed on packaging",
+      "How a brand is perceived in consumers' minds relative to competitors",
+      "The physical location of a store",
+      "The price tier of a product",
+    ],
+    answer: 1,
+    topic: "Branding",
+  },
+  {
+    id: "m4",
+    question: "What is the main goal of SEO?",
+    options: [
+      "To design website layouts",
+      "To improve organic (non-paid) visibility in search engines",
+      "To run paid ad campaigns",
+      "To send bulk emails",
+    ],
+    answer: 1,
+    topic: "Digital Marketing",
+  },
+  {
+    id: "m5",
+    question: "What is customer segmentation?",
+    options: [
+      "Dividing customers into distinct groups based on shared characteristics",
+      "Counting total customers",
+      "Setting the same price for everyone",
+      "Manufacturing in batches",
+    ],
+    answer: 0,
+    topic: "Market Research",
+  },
+  {
+    id: "m6",
+    question: "What is a USP (Unique Selling Proposition)?",
+    options: [
+      "A discount offered to all customers",
+      "The one benefit that makes a product different from competitors",
+      "A type of sales tax",
+      "A government regulation on products",
+    ],
+    answer: 1,
+    topic: "Branding",
+  },
+  {
+    id: "m7",
+    question: "What is content marketing?",
+    options: [
+      "Placing ads on TV",
+      "Creating and distributing valuable content to attract and retain a target audience",
+      "Cold-calling potential customers",
+      "Selling products at a discount",
+    ],
+    answer: 1,
+    topic: "Digital Marketing",
+  },
+  {
+    id: "m8",
+    question: "In the marketing funnel, which stage comes right after Awareness?",
+    options: ["Purchase", "Interest", "Loyalty", "Advocacy"],
+    answer: 1,
+    topic: "Consumer Behaviour",
+  },
+  {
+    id: "m9",
+    question: "What is the primary purpose of market research?",
+    options: [
+      "To design products",
+      "To gather insights about consumer needs, preferences and market conditions",
+      "To set up a factory",
+      "To hire employees",
+    ],
+    answer: 1,
+    topic: "Market Research",
+  },
+  {
+    id: "m10",
+    question: "What is B2C marketing?",
+    options: [
+      "Business-to-Community marketing",
+      "Business-to-Consumer marketing — selling directly to individual buyers",
+      "Brand-to-Consumer marketing",
+      "Bulk-to-Customer marketing",
+    ],
+    answer: 1,
+    topic: "Marketing Fundamentals",
+  },
+];
+
+// ============ BUSINESS DEGREES: FINANCE ============
+
+export const FINANCE_QUESTIONS: AssessmentQuestion[] = [
+  {
+    id: "f1",
+    question: "What is the formula for profit?",
+    options: ["Revenue + Costs", "Revenue - Costs", "Revenue × Costs", "Revenue / Costs"],
+    answer: 1,
+    topic: "Accounting Basics",
+  },
+  {
+    id: "f2",
+    question: "What is ROI?",
+    options: [
+      "Rate of Inflation",
+      "Return on Investment — the gain relative to the cost of an investment",
+      "Revenue Over Income",
+      "Risk of Interest",
+    ],
+    answer: 1,
+    topic: "Financial Analysis",
+  },
+  {
+    id: "f3",
+    question: "What does a balance sheet show?",
+    options: [
+      "Monthly sales figures",
+      "Assets, liabilities and shareholder equity at a point in time",
+      "Employee salaries",
+      "Customer reviews",
+    ],
+    answer: 1,
+    topic: "Accounting Basics",
+  },
+  {
+    id: "f4",
+    question: "What is cash flow?",
+    options: [
+      "The speed of water in a pipe",
+      "The movement of money in and out of a business over a period",
+      "The number of coins a business has",
+      "The interest rate on a loan",
+    ],
+    answer: 1,
+    topic: "Financial Analysis",
+  },
+  {
+    id: "f5",
+    question: "What is depreciation?",
+    options: [
+      "An increase in asset value over time",
+      "The gradual decrease in the value of a tangible asset over its useful life",
+      "A type of tax refund",
+      "A rise in stock prices",
+    ],
+    answer: 1,
+    topic: "Accounting Basics",
+  },
+  {
+    id: "f6",
+    question: "What does a P&L statement report?",
+    options: [
+      "Payroll and Leave",
+      "Profit and Loss — revenues earned and expenses incurred over a period",
+      "Products and Logistics",
+      "People and Leadership",
+    ],
+    answer: 1,
+    topic: "Financial Reporting",
+  },
+  {
+    id: "f7",
+    question: "What is EBITDA?",
+    options: [
+      "Earnings Before Interest, Taxes, Depreciation and Amortization",
+      "Equity Before Income, Tax, Debt and Assets",
+      "Estimated Budget for IT, Technology, Development and Analytics",
+      "Earnings Before International Trade and Digital Assets",
+    ],
+    answer: 0,
+    topic: "Financial Reporting",
+  },
+  {
+    id: "f8",
+    question: "What does 'time value of money' mean?",
+    options: [
+      "Old money is worth less than new money",
+      "A sum of money today is worth more than the same sum in the future due to earning potential",
+      "Coins are worth more than notes",
+      "Money loses value every day",
+    ],
+    answer: 1,
+    topic: "Financial Concepts",
+  },
+  {
+    id: "f9",
+    question: "What is a budget?",
+    options: [
+      "A type of bank loan",
+      "A financial plan that outlines expected income and expenses over a set period",
+      "An employee benefit",
+      "A product discount",
+    ],
+    answer: 1,
+    topic: "Financial Planning",
+  },
+  {
+    id: "f10",
+    question: "What is the purpose of financial forecasting?",
+    options: [
+      "To predict future financial outcomes and guide strategic decisions",
+      "To calculate last year's taxes",
+      "To count cash in the register",
+      "To design the company logo",
+    ],
+    answer: 0,
+    topic: "Financial Planning",
+  },
+];
+
+// ============ BUSINESS DEGREES: BUSINESS FUNDAMENTALS ============
+
+export const BUSINESS_FUNDAMENTALS_QUESTIONS: AssessmentQuestion[] = [
+  {
+    id: "b1",
+    question: "What is a business model?",
+    options: [
+      "A physical model of a building",
+      "How an organisation creates, delivers and captures value",
+      "A type of business card",
+      "A marketing campaign",
+    ],
+    answer: 1,
+    topic: "Strategy",
+  },
+  {
+    id: "b2",
+    question: "What is a KPI?",
+    options: [
+      "Key Personal Interest",
+      "Key Performance Indicator — a measurable value that shows progress toward a goal",
+      "Knowledge Process Integration",
+      "Key Product Inventory",
+    ],
+    answer: 1,
+    topic: "Management",
+  },
+  {
+    id: "b3",
+    question: "What is supply chain management?",
+    options: [
+      "Managing the company's bank accounts",
+      "Overseeing the flow of goods from raw materials to the end customer",
+      "Designing the company website",
+      "Managing employee benefits",
+    ],
+    answer: 1,
+    topic: "Operations",
+  },
+  {
+    id: "b4",
+    question: "What is project management?",
+    options: [
+      "Managing a single employee",
+      "Planning, executing and closing projects to achieve specific goals on time and within budget",
+      "Designing project reports",
+      "Running a factory",
+    ],
+    answer: 1,
+    topic: "Operations",
+  },
+  {
+    id: "b5",
+    question: "What does HR planning involve?",
+    options: [
+      "Designing office furniture",
+      "Forecasting an organisation's future human resource needs and ensuring the right people are in the right roles",
+      "Filing tax returns",
+      "Creating social media posts",
+    ],
+    answer: 1,
+    topic: "Human Resources",
+  },
+  {
+    id: "b6",
+    question: "What is stakeholder management?",
+    options: [
+      "Managing the company's stock price",
+      "Identifying, analysing and engaging with people who have an interest in a project or organisation",
+      "Managing仓库 inventory",
+      "Writing code for a website",
+    ],
+    answer: 1,
+    topic: "Strategy",
+  },
+  {
+    id: "b7",
+    question: "What is change management?",
+    options: [
+      "Exchanging currency",
+      "A structured approach to transitioning individuals and organisations from a current state to a desired future state",
+      "Changing a light bulb",
+      "Updating software",
+    ],
+    answer: 1,
+    topic: "Management",
+  },
+  {
+    id: "b8",
+    question: "What is organisational structure?",
+    options: [
+      "The building layout of the office",
+      "The system that outlines how activities, roles and responsibilities are directed and coordinated",
+      "The company's dress code",
+      "The type of chairs used",
+    ],
+    answer: 1,
+    topic: "Management",
+  },
+  {
+    id: "b9",
+    question: "What does OKR stand for?",
+    options: [
+      "Office Key Requirements",
+      "Objectives and Key Results — a goal-setting framework",
+      "Operational Knowledge Review",
+      "Online Knowledge Repository",
+    ],
+    answer: 1,
+    topic: "Strategy",
+  },
+  {
+    id: "b10",
+    question: "What is business ethics?",
+    options: [
+      "The cost of running a business",
+      "Moral principles and values that guide behaviour and decision-making in the business world",
+      "A type of business license",
+      "The company's profit margin",
+    ],
+    answer: 1,
+    topic: "Ethics",
+  },
+];
+
+// ============ B.Sc / M.Sc: DATA & ANALYTICS ============
+
+export const DATA_ANALYTICS_QUESTIONS: AssessmentQuestion[] = [
+  {
+    id: "d1",
+    question: "What is the difference between data and information?",
+    options: [
+      "They are the same thing",
+      "Data is raw facts; information is processed and organised data",
+      "Information is always numeric; data is always text",
+      "Data comes from the internet; information comes from books",
+    ],
+    answer: 1,
+    topic: "Data Concepts",
+  },
+  {
+    id: "d2",
+    question: "What is SQL primarily used for?",
+    options: [
+      "Creating graphic designs",
+      "Querying and managing data in relational databases",
+      "Building mobile apps",
+      "Sending emails",
+    ],
+    answer: 1,
+    topic: "SQL",
+  },
+  {
+    id: "d3",
+    question: "What is the purpose of data visualisation?",
+    options: [
+      "To encrypt data",
+      "To present data in graphical or visual formats so patterns and insights are easier to understand",
+      "To delete old records",
+      "To compress files",
+    ],
+    answer: 1,
+    topic: "Data Visualisation",
+  },
+  {
+    id: "d4",
+    question: "What is correlation?",
+    options: [
+      "When one variable directly causes another to change",
+      "A statistical relationship between two variables that move together",
+      "A type of database query",
+      "A method of data entry",
+    ],
+    answer: 1,
+    topic: "Statistics",
+  },
+  {
+    id: "d5",
+    question: "What is a pivot table?",
+    options: [
+      "A type of office furniture",
+      "A data summarisation tool in spreadsheets that groups and rearranges data to find patterns",
+      "A database backup method",
+      "A chart type",
+    ],
+    answer: 1,
+    topic: "Excel & Spreadsheets",
+  },
+  {
+    id: "d6",
+    question: "What does 'data cleaning' involve?",
+    options: [
+      "Deleting all old data",
+      "Detecting and correcting (or removing) corrupt, inaccurate or irrelevant records from a dataset",
+      "Shredding paper documents",
+      "Installing antivirus software",
+    ],
+    answer: 1,
+    topic: "Data Preparation",
+  },
+  {
+    id: "d7",
+    question: "What is descriptive statistics?",
+    options: [
+      "Making up stories about data",
+      "Methods for summarising and describing the main features of a dataset",
+      "Predicting future trends",
+      "Storing data in the cloud",
+    ],
+    answer: 1,
+    topic: "Statistics",
+  },
+  {
+    id: "d8",
+    question: "What is A/B testing?",
+    options: [
+      "Testing two versions of something to see which performs better",
+      "Grading students A through B",
+      "Checking blood type",
+      "A type of software bug",
+    ],
+    answer: 0,
+    topic: "Analytics",
+  },
+  {
+    id: "d9",
+    question: "What is a data pipeline?",
+    options: [
+      "A water pipe in a data centre",
+      "A series of steps that move and transform data from a source system to a destination",
+      "A type of network cable",
+      "A method of data entry",
+    ],
+    answer: 1,
+    topic: "Data Engineering",
+  },
+  {
+    id: "d10",
+    question: "What is the primary goal of data analytics?",
+    options: [
+      "To store more data",
+      "To discover useful information, draw conclusions and support decision-making",
+      "To delete unnecessary files",
+      "To design databases",
+    ],
+    answer: 1,
+    topic: "Data Concepts",
+  },
+];
+
 export interface AssessmentSet {
   type: string;
   title: string;
@@ -296,7 +781,61 @@ export const ASSESSMENT_SETS: AssessmentSet[] = [
     description: "Interview etiquette, emails and behavioral readiness.",
     questions: COMMUNICATION_QUESTIONS,
   },
+  {
+    type: "MARKETING",
+    title: "Marketing & Digital Strategy",
+    description: "Brand positioning, SEO, market research and the 4Ps.",
+    questions: MARKETING_QUESTIONS,
+  },
+  {
+    type: "FINANCE",
+    title: "Finance & Accounting Basics",
+    description: "P&L, cash flow, ROI, depreciation and financial planning.",
+    questions: FINANCE_QUESTIONS,
+  },
+  {
+    type: "BUSINESS",
+    title: "Business & Management Fundamentals",
+    description: "Strategy, KPIs, project management, HR and operations.",
+    questions: BUSINESS_FUNDAMENTALS_QUESTIONS,
+  },
+  {
+    type: "DATA",
+    title: "Data & Analytics Fundamentals",
+    description: "SQL, statistics, data cleaning, visualisation and analytics concepts.",
+    questions: DATA_ANALYTICS_QUESTIONS,
+  },
 ];
+
+// Select the right three assessments based on the student's degree
+export function getAssessmentSetsForProfile(degree: string | null | undefined): AssessmentSet[] {
+  const d = (degree ?? "").toLowerCase();
+
+  // Business degrees
+  if (d.includes("bba") || d.includes("mba")) {
+    return [
+      ASSESSMENT_SETS.find((s) => s.type === "BUSINESS")!,
+      ASSESSMENT_SETS.find((s) => s.type === "MARKETING")!,
+      ASSESSMENT_SETS.find((s) => s.type === "COMMUNICATION")!,
+    ];
+  }
+
+  // Science / research degrees
+  if (d.includes("b.sc") || d.includes("m.sc")) {
+    return [
+      ASSESSMENT_SETS.find((s) => s.type === "DATA")!,
+      ASSESSMENT_SETS.find((s) => s.type === "APTITUDE")!,
+      ASSESSMENT_SETS.find((s) => s.type === "COMMUNICATION")!,
+    ];
+  }
+
+  // Technical degrees (B.Tech, B.E, BCA, MCA, M.Tech) — default
+  return [
+    ASSESSMENT_SETS.find((s) => s.type === "TECHNICAL")!,
+    ASSESSMENT_SETS.find((s) => s.type === "APTITUDE")!,
+    ASSESSMENT_SETS.find((s) => s.type === "COMMUNICATION")!,
+  ];
+}
 
 // ============ PLACEMENT PREP: APTITUDE PRACTICE SETS ============
 

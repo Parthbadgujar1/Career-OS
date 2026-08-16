@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
 import { markRoadmapItemCompleteAction } from "@/server/actions/tasks";
-import { generateRoadmapAction } from "@/server/actions/onboarding";
 import { currentWeek } from "@/lib/engine/tasks";
-import { CATEGORY_LABELS } from "@/lib/constants";
+import { CATEGORY_LABELS, durationLabel } from "@/lib/constants";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge, Progress } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RoadmapPlanner } from "@/components/app/roadmap-planner";
+import Link from "next/link";
+import { Mic } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -19,14 +21,14 @@ export default async function RoadmapPage() {
 
   if (!roadmap) {
     return (
-      <div className="mx-auto max-w-2xl space-y-4 text-center">
-        <h1 className="text-2xl font-bold">Your Roadmap</h1>
-        <p className="text-sm text-slate-500">
-          You don&apos;t have a roadmap yet. Complete onboarding first, or generate one now.
-        </p>
-        <form action={generateRoadmapAction}>
-          <Button type="submit">Generate roadmap</Button>
-        </form>
+      <div className="mx-auto max-w-2xl space-y-4">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Your Roadmap</h1>
+          <p className="text-sm text-slate-500">
+            You don&apos;t have a roadmap yet. Choose a duration and let the AI plan your journey.
+          </p>
+        </div>
+        <RoadmapPlanner />
       </div>
     );
   }
@@ -48,12 +50,24 @@ export default async function RoadmapPage() {
         <div>
           <h1 className="text-2xl font-bold">Your Roadmap</h1>
           <p className="text-sm text-slate-500">
-            {roadmap.title} · {roadmap.totalWeeks} weeks · currently on week {Math.min(week, roadmap.totalWeeks)}
+            {roadmap.title} · {durationLabel(roadmap.totalWeeks)} · currently on week {Math.min(week, roadmap.totalWeeks)}
           </p>
         </div>
-        <form action={generateRoadmapAction}>
-          <Button type="submit" variant="outline">Regenerate with AI</Button>
-        </form>
+        <div className="flex items-center gap-3">
+          <Link href="/app/interviews">
+            <Button variant="outline" size="sm">
+              <Mic className="h-4 w-4" /> Practice a mock interview
+            </Button>
+          </Link>
+          <details className="group">
+            <summary className="cursor-pointer list-none text-sm font-medium text-indigo-600 hover:text-indigo-700">
+              Change duration &amp; regenerate
+            </summary>
+            <div className="mt-3 w-[24rem] max-w-full">
+              <RoadmapPlanner currentWeeks={roadmap.totalWeeks} />
+            </div>
+          </details>
+        </div>
       </div>
 
       <Card>

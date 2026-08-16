@@ -33,7 +33,14 @@ export async function generateWeeklyReportAction() {
 }
 
 export async function markRoadmapItemCompleteAction(itemId: string) {
-  await requireStudentProfile();
+  const { profile } = await requireStudentProfile();
+  const item = await prisma.roadmapItem.findUnique({
+    where: { id: itemId },
+    include: { roadmap: true },
+  });
+  if (!item || item.roadmap.studentId !== profile.id) {
+    return;
+  }
   await prisma.roadmapItem.update({
     where: { id: itemId },
     data: { status: "COMPLETED" },

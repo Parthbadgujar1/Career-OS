@@ -1,6 +1,6 @@
 import "server-only";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { generateRoadmap, type RoadmapInput } from "@/lib/ai/roadmap";
+import { generateRoadmap, generateLongTermPlan, type RoadmapInput } from "@/lib/ai/roadmap";
 
 export type MilestoneCategory = "LEARNING" | "CODING" | "PROJECT" | "PROFILE" | "INTERVIEW" | "OPPORTUNITY";
 
@@ -205,15 +205,29 @@ export async function persistRoadmap(
 
   if (allowAI && process.env.GEMINI_API_KEY) {
     try {
-      const ai = await generateRoadmap(input, totalWeeks);
-      milestones = ai.milestones
-        .filter((m) => m.week >= 1 && m.week <= totalWeeks)
-        .map((m) => ({
-          week: m.week,
-          title: m.title,
-          description: m.description,
-          category: m.category as MilestoneCategory,
-        }));
+      if (totalWeeks > 16) {
+        const plan = await generateLongTermPlan(input, totalWeeks);
+        for (const p of plan.phases) {
+          for (let w = Math.max(1, p.weekStart); w <= Math.min(totalWeeks, p.weekEnd); w++) {
+            milestones.push({
+              week: w,
+              title: `Phase ${p.phase}: ${p.title}`,
+              description: p.description,
+              category: p.focus,
+            });
+          }
+        }
+      } else {
+        const ai = await generateRoadmap(input, totalWeeks);
+        milestones = ai.milestones
+          .filter((m) => m.week >= 1 && m.week <= totalWeeks)
+          .map((m) => ({
+            week: m.week,
+            title: m.title,
+            description: m.description,
+            category: m.category as MilestoneCategory,
+          }));
+      }
     } catch (e) {
       console.error("[roadmap] AI generation failed, using template", e);
     }
@@ -239,6 +253,11 @@ export async function persistRoadmap(
   const existing = await prisma.roadmap.findUnique({ where: { studentId } });
   if (existing) {
     await prisma.roadmapItem.deleteMany({ where: { roadmapId: existing.id } });
+    // Unlink tasks that referenced the now-deleted roadmap items
+    await prisma.task.updateMany({
+      where: { studentId, roadmapItemId: { not: null } },
+      data: { roadmapItemId: null },
+    });
     await prisma.roadmap.update({
       where: { id: existing.id },
       data: { title: `${input.targetRole} Roadmap`, targetRole: input.targetRole, totalWeeks, aiSummary, status: "ACTIVE" },

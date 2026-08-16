@@ -5,16 +5,17 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
-import { ASSESSMENT_SETS } from "@/lib/assessment-data";
+import { ASSESSMENT_SETS, getAssessmentSetsForProfile } from "@/lib/assessment-data";
 import { persistRoadmap } from "@/lib/engine/roadmap";
 import { snapshotReadiness } from "@/lib/scoring/readiness";
+import { scheduleNextProgressTest } from "@/lib/engine/tests";
 import { fromJson } from "@/lib/utils";
 
 const onboardingSchema = z.object({
   degree: z.string().min(1, "Select your degree"),
   specialization: z.string().optional(),
   year: z.string().min(1, "Select your year"),
-  targetRole: z.string().min(1, "Select a target role"),
+  targetRoles: z.string(), // JSON array of roles
   weeklyHours: z.coerce.number().int().min(1).max(60),
   interests: z.string(), // JSON array
   industries: z.string(), // JSON array
@@ -28,7 +29,7 @@ export async function saveOnboardingAction(_prev: unknown, formData: FormData) {
     degree: formData.get("degree"),
     specialization: formData.get("specialization"),
     year: formData.get("year"),
-    targetRole: formData.get("targetRole"),
+    targetRoles: formData.get("targetRoles"),
     weeklyHours: formData.get("weeklyHours"),
     interests: formData.get("interests"),
     industries: formData.get("industries"),
@@ -43,6 +44,10 @@ export async function saveOnboardingAction(_prev: unknown, formData: FormData) {
   const interests = fromJson<string[]>(data.interests, []);
   const industries = fromJson<string[]>(data.industries, []);
   const skills = fromJson<{ skillId: string; rating: number }[]>(data.skills, []);
+  const targetRoles = fromJson<string[]>(data.targetRoles, []);
+  if (targetRoles.length === 0) {
+    return { error: "Select at least one target role" };
+  }
 
   // Store skills
   for (const s of skills) {
@@ -60,7 +65,8 @@ export async function saveOnboardingAction(_prev: unknown, formData: FormData) {
       degree: data.degree,
       specialization: data.specialization,
       year: data.year,
-      targetRole: data.targetRole,
+      targetRole: targetRoles[0],
+      targetRoles: JSON.stringify(targetRoles),
       weeklyHours: data.weeklyHours,
       interests: JSON.stringify(interests),
       preferredIndustries: JSON.stringify(industries),
@@ -81,7 +87,7 @@ export async function saveOnboardingAction(_prev: unknown, formData: FormData) {
       degree: data.degree,
       specialization: data.specialization ?? "",
       year: data.year,
-      targetRole: data.targetRole,
+      targetRole: targetRoles[0],
       interests,
       weeklyHours: data.weeklyHours,
       skills: skillRows.map((s) => ({ name: s.skill.name, rating: s.selfRating })),
@@ -123,7 +129,12 @@ export async function submitAssessmentAction(
     },
   });
 
-  if (setType === "COMMUNICATION") {
+  // Check if all assessments for this student's profile are now complete
+  const requiredSets = getAssessmentSetsForProfile(profile.degree);
+  const taken = await prisma.assessment.findMany({ where: { studentId: profile.id } });
+  const takenTypes = new Set(taken.map((a) => a.type));
+  const allComplete = requiredSets.every((s) => takenTypes.has(s.type));
+  if (allComplete) {
     await prisma.studentProfile.update({
       where: { id: profile.id },
       data: { assessmentComplete: true },
@@ -135,8 +146,9 @@ export async function submitAssessmentAction(
   return { ok: true, score, maxScore: set.questions.length, type: setType };
 }
 
-export async function generateRoadmapAction() {
+export async function generateRoadmapAction(formData: FormData) {
   const { profile } = await requireStudentProfile();
+  const durationWeeks = Math.max(4, Number(formData.get("durationWeeks")) || 12);
   const skills = await prisma.studentSkill.findMany({
     where: { studentId: profile.id },
     include: { skill: true },
@@ -154,8 +166,33 @@ export async function generateRoadmapAction() {
       skills: skills.map((s) => ({ name: s.skill.name, rating: s.selfRating })),
       weakSkills: skills.filter((s) => s.selfRating <= 2).map((s) => s.skill.name),
     },
-    12,
+    durationWeeks,
     true
   );
+  await scheduleNextProgressTest(prisma, profile.id);
   revalidatePath("/app/roadmap");
+}
+
+export async function changePathAction() {
+  const { profile } = await requireStudentProfile();
+  await prisma.studentProfile.update({
+    where: { id: profile.id },
+    data: {
+      onboardedAt: null,
+      assessmentComplete: false,
+      degree: { set: null },
+      specialization: { set: null },
+      targetRole: { set: null },
+      targetRoles: { set: "[]" },
+    },
+  });
+  // Delete old roadmap so a fresh one is generated on re-onboarding
+  await prisma.roadmap.deleteMany({ where: { studentId: profile.id } });
+  // Unlink tasks that referenced the now-deleted roadmap items
+  await prisma.task.updateMany({
+    where: { studentId: profile.id, roadmapItemId: { not: null } },
+    data: { roadmapItemId: null },
+  });
+  revalidatePath("/app");
+  redirect("/app/assessment?step=onboard");
 }
