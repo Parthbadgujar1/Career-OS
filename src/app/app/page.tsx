@@ -265,8 +265,9 @@ export default async function OverviewPage() {
                   <p className="text-sm text-slate-500">No tasks generated yet.</p>
                 )}
                 {tasks.slice(0, 5).map((t, i) => (
-                  <div
+                  <Link
                     key={t.id}
+                    href="/app/tasks"
                     className="flex items-center justify-between rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:border-indigo-100 hover:bg-indigo-50/30 animate-fade-in-up"
                     style={{ animationDelay: `${350 + i * 50}ms` }}
                   >
@@ -289,7 +290,7 @@ export default async function OverviewPage() {
                       </span>
                     </div>
                     <Badge variant="secondary" className="text-[10px]">{CATEGORY_LABELS[t.category as keyof typeof CATEGORY_LABELS]}</Badge>
-                  </div>
+                  </Link>
                 ))}
                 <Link href="/app/tasks" className="flex items-center gap-1 pt-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors group">
                   Manage tasks <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -358,13 +359,13 @@ export default async function OverviewPage() {
                   <p className="text-sm text-slate-500">No notifications yet.</p>
                 )}
                 {notifications.map((n, i) => (
-                  <div key={n.id} className="rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:border-indigo-100 hover:bg-indigo-50/30 animate-fade-in-up" style={{ animationDelay: `${i * 50}ms` }}>
+                  <Link key={n.id} href="/app/notifications" className="block rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:border-indigo-100 hover:bg-indigo-50/30 animate-fade-in-up" style={{ animationDelay: `${i * 50}ms` }}>
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-3.5 w-3.5 text-indigo-500" />
                       <p className="text-sm font-semibold">{n.title}</p>
                     </div>
                     {n.body && <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">{n.body}</p>}
-                  </div>
+                  </Link>
                 ))}
               </CardContent>
             </Card>

@@ -6,6 +6,8 @@ import { requireStudentProfile } from "@/lib/auth-helper";
 import { recordOpportunityAction } from "@/lib/engine/opportunities";
 import { snapshotReadiness } from "@/lib/scoring/readiness";
 import { APTITUDE_PRACTICE_SETS } from "@/lib/assessment-data";
+import { evaluateCodeSolution } from "@/lib/ai/coding";
+import { APPLICATION_STATUSES } from "@/lib/constants";
 
 export async function registerEventAction(eventId: string) {
   const { profile } = await requireStudentProfile();
@@ -61,6 +63,27 @@ export async function applyOpportunityAction(opportunityId: string) {
   await recordOpportunityAction(prisma, profile.id, opportunityId, "APPLIED");
   await snapshotReadiness(prisma, profile.id);
   revalidatePath("/app/opportunities");
+}
+
+export async function updateApplicationStatusAction(
+  actionId: string,
+  status: string
+): Promise<{ ok: boolean; error?: string }> {
+  const { profile } = await requireStudentProfile();
+  if (!APPLICATION_STATUSES.includes(status as (typeof APPLICATION_STATUSES)[number])) {
+    return { ok: false, error: "Invalid application status." };
+  }
+  const action = await prisma.opportunityAction.findFirst({
+    where: { id: actionId, studentId: profile.id },
+  });
+  if (!action) return { ok: false, error: "Application not found." };
+  await prisma.opportunityAction.update({
+    where: { id: actionId },
+    data: { action: status },
+  });
+  await snapshotReadiness(prisma, profile.id);
+  revalidatePath("/app/applications");
+  return { ok: true };
 }
 
 export async function recordCodingSubmissionAction(problemId: string, status: string, code: string) {
@@ -129,3 +152,42 @@ export async function submitQuizAction(
   revalidatePath("/app/quizzes");
   return { ok: true, score, maxScore: questions.length };
 }
+
+export async function getAiCodingFeedbackAction(
+  problemId: string,
+  code: string
+): Promise<
+  | { ok: true; correctness: string; feedback: string; timeComplexity: string; spaceComplexity: string }
+  | { error: string }
+> {
+  await requireStudentProfile();
+
+  const problem = await prisma.codingProblem.findUnique({ where: { id: problemId } });
+  if (!problem) return { error: "Problem not found" };
+
+  if (!process.env.GEMINI_API_KEY) {
+    return { error: "AI features are currently unavailable (missing API key)." };
+  }
+
+  try {
+    const feedback = await evaluateCodeSolution({
+      title: problem.title,
+      topic: problem.topic,
+      difficulty: problem.difficulty,
+      description: problem.description,
+      code,
+    });
+
+    return {
+      ok: true,
+      correctness: feedback.correctness,
+      feedback: feedback.feedback,
+      timeComplexity: feedback.timeComplexity,
+      spaceComplexity: feedback.spaceComplexity,
+    };
+  } catch (e) {
+    console.error("[coding feedback] AI feedback failed", e);
+    return { error: "Failed to generate AI feedback. Please try again later." };
+  }
+}
+

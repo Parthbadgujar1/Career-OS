@@ -86,6 +86,7 @@ export async function createEventAction(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim() || null;
   const startsRaw = String(formData.get("startsAt") ?? "").trim();
   const endsRaw = String(formData.get("endsAt") ?? "").trim();
+  const location = String(formData.get("location") ?? "").trim() || null;
   const url = String(formData.get("url") ?? "").trim() || null;
 
   if (!title || !type || !startsRaw) return;
@@ -102,6 +103,7 @@ export async function createEventAction(formData: FormData) {
       description,
       startsAt,
       endsAt: endsAt && !Number.isNaN(endsAt.getTime()) ? endsAt : null,
+      location,
       url,
     },
   });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { submitAssessmentAction } from "@/server/actions/onboarding";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +25,12 @@ export function AssessmentQuiz({
   score?: { score: number; maxScore: number };
 }) {
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [result, setResult] = useState<{ ok: boolean; score: number; maxScore: number } | null>(
+  const [result, setResult] = useState<{
+    ok: boolean;
+    score: number;
+    maxScore: number;
+    graded?: boolean;
+  } | null>(
     alreadyTaken && score ? { ok: true, score: score.score, maxScore: score.maxScore } : null
   );
   const [pending, setPending] = useState(false);
@@ -39,7 +45,7 @@ export function AssessmentQuiz({
     for (const [k, v] of Object.entries(answers)) fd.set(`q_${k}`, String(v));
     const res = await submitAssessmentAction(fd);
     if (res && "ok" in res) {
-      setResult({ ok: true, score: res.score, maxScore: res.maxScore });
+      setResult({ ok: true, score: res.score, maxScore: res.maxScore, graded: res.graded });
     }
     setPending(false);
   }
@@ -56,15 +62,29 @@ export function AssessmentQuiz({
         </CardHeader>
         <CardContent>
           <p className="text-lg font-semibold">
-            Score: {result.score}/{result.maxScore}
+            Score: {result.score}/{result.maxScore} ({pct}%)
           </p>
           <p className="text-sm text-slate-500">
             {pct >= 70
-              ? "Strong baseline. Your roadmap will focus on advanced topics."
+              ? "Strong performance — related skills were graded accordingly."
               : pct >= 40
-                ? "Good starting point. Your roadmap will strengthen these foundations."
-                : "Don't worry — this is your baseline. The roadmap starts from here and builds you up."}
+                ? "Good start — weaker areas were graded lower and flagged in your roadmap."
+                : "This is your measured baseline — related skills start at a lower grade and your roadmap builds them up."}
           </p>
+          {result.graded && (
+            <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+              <p className="text-sm font-semibold text-emerald-700">All tests complete 🎉</p>
+              <p className="mt-0.5 text-sm text-slate-600">
+                Your skills are now graded 1–5 from your performance and your personalized roadmap
+                has been generated.
+              </p>
+              <Link href="/app" className="mt-3 inline-block">
+                <Button variant="gradient" size="sm">
+                  Go to your roadmap
+                </Button>
+              </Link>
+            </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -109,7 +129,7 @@ export function AssessmentQuiz({
             </div>
           ))}
           <Button type="submit" disabled={!allAnswered || pending} className="w-full">
-            {pending ? "Submitting..." : `Submit ${title}`}
+            {pending ? "Grading your skills..." : `Submit ${title}`}
           </Button>
           {!allAnswered && (
             <p className="text-center text-xs text-slate-400">

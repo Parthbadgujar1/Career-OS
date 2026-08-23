@@ -28,6 +28,7 @@ export default async function EventsPage() {
     description: e.description,
     startsAt: e.startsAt.toISOString(),
     endsAt: e.endsAt?.toISOString() ?? null,
+    location: e.location,
     url: e.url,
     registered: registered.has(e.id),
   }));

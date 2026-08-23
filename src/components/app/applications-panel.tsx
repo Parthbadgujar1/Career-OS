@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Calendar, ExternalLink } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
+import { Calendar, ExternalLink, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { updateApplicationStatusAction } from "@/server/actions/activities";
 
 export interface ApplicationRow {
   id: string;
@@ -30,6 +31,16 @@ const STATUS_ORDER = ["OFFER", "INTERVIEW", "APPLIED", "SAVED", "REJECTED", "COM
 
 export function ApplicationsPanel({ applications }: { applications: ApplicationRow[] }) {
   const [filter, setFilter] = useState("ALL");
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+
+  const changeStatus = (id: string, status: string) => {
+    setPendingId(id);
+    startTransition(async () => {
+      await updateApplicationStatusAction(id, status);
+      setPendingId(null);
+    });
+  };
 
   const filtered = useMemo(() => {
     if (filter === "ALL") return applications;
@@ -81,6 +92,22 @@ export function ApplicationsPanel({ applications }: { applications: ApplicationR
                 <div className="flex items-center gap-2 text-sm text-slate-600">
                   <Calendar className="h-4 w-4" />
                   <span>{new Date(app.appliedDate).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={app.status}
+                    onChange={(e) => changeStatus(app.id, e.target.value)}
+                    disabled={pendingId === app.id}
+                    className="flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:opacity-50"
+                    aria-label={`Update status for ${app.title}`}
+                  >
+                    {STATUS_ORDER.map((s) => (
+                      <option key={s} value={s}>
+                        {s.charAt(0) + s.slice(1).toLowerCase()}
+                      </option>
+                    ))}
+                  </select>
+                  {pendingId === app.id && <RefreshCw className="h-4 w-4 shrink-0 animate-spin text-indigo-500" />}
                 </div>
                 <Button variant="outline" size="sm" className="w-full" asChild>
                   <a href={app.url} target="_blank" rel="noopener noreferrer">

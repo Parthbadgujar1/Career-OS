@@ -110,12 +110,12 @@ const MODULES = [
 ];
 
 const GATEWAYS = [
-  { name: "Roadmap.sh", text: "Your role roadmap, placed inside your weekly plan", color: "#0a0a0a", bg: "bg-slate-900" },
-  { name: "Internshala", text: "Internships & trainings matched to your profile", color: "#14919b", bg: "bg-teal-600" },
-  { name: "LinkedIn", text: "Jobs, networking and profile improvement", color: "#0a66c2", bg: "bg-blue-600" },
-  { name: "Naukri", text: "Role and eligibility-based job search", color: "#ff5733", bg: "bg-orange-500" },
-  { name: "Indeed", text: "Relevant job search redirection", color: "#2164f3", bg: "bg-blue-500" },
-  { name: "Unstop", text: "Quizzes, hackathons & hiring challenges", color: "#7b2ff7", bg: "bg-violet-600" },
+  { name: "Roadmap.sh", text: "Your role roadmap, placed inside your weekly plan", color: "#0a0a0a", bg: "bg-slate-900", url: "https://roadmap.sh" },
+  { name: "Internshala", text: "Internships & trainings matched to your profile", color: "#14919b", bg: "bg-teal-600", url: "https://internshala.com" },
+  { name: "LinkedIn", text: "Jobs, networking and profile improvement", color: "#0a66c2", bg: "bg-blue-600", url: "https://www.linkedin.com/jobs" },
+  { name: "Naukri", text: "Role and eligibility-based job search", color: "#ff5733", bg: "bg-orange-500", url: "https://www.naukri.com" },
+  { name: "Indeed", text: "Relevant job search redirection", color: "#2164f3", bg: "bg-blue-500", url: "https://in.indeed.com" },
+  { name: "Unstop", text: "Quizzes, hackathons & hiring challenges", color: "#7b2ff7", bg: "bg-violet-600", url: "https://unstop.com" },
 ];
 
 const SIGNALS = [
@@ -149,9 +149,26 @@ const TESTIMONIALS = [
   },
 ];
 
-const FOOTER_PRODUCT = ["Roadmap", "Daily tasks", "Readiness score", "Weekly reports", "Mock interviews"];
-const FOOTER_PLATFORMS = ["Roadmap.sh", "Internshala", "LinkedIn", "Naukri", "Unstop"];
-const FOOTER_COLLEGES = ["Mentor dashboards", "Intervention lists", "Batch analytics", "Weekly reports"];
+const FOOTER_PRODUCT = [
+  { label: "Roadmap", href: "/app/roadmap" },
+  { label: "Daily tasks", href: "/app/tasks" },
+  { label: "Readiness score", href: "/app" },
+  { label: "Weekly reports", href: "/app/reports" },
+  { label: "Mock interviews", href: "/app/interviews" },
+];
+const FOOTER_PLATFORMS = [
+  { label: "Roadmap.sh", href: "https://roadmap.sh", external: true },
+  { label: "Internshala", href: "https://internshala.com", external: true },
+  { label: "LinkedIn", href: "https://www.linkedin.com/jobs", external: true },
+  { label: "Naukri", href: "https://www.naukri.com", external: true },
+  { label: "Unstop", href: "https://unstop.com", external: true },
+];
+const FOOTER_COLLEGES = [
+  { label: "Mentor dashboards", href: "/mentor" },
+  { label: "Intervention lists", href: "/admin#students" },
+  { label: "Batch analytics", href: "/admin" },
+  { label: "Weekly reports", href: "/mentor/reports" },
+];
 
 const badgeVariant = (tone: string) => {
   if (tone === "success") return "success" as const;
@@ -175,18 +192,20 @@ export default async function LandingPage() {
       {/* ── Header ── */}
       <header className="sticky top-0 z-30 border-b border-slate-100/80 bg-white/80 backdrop-blur-xl animate-fade-in-down">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-2.5">
+          <Link href="/" className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-sm font-bold text-white shadow-lg shadow-indigo-500/25">
               CO
             </div>
             <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Career OS</span>
-          </div>
+          </Link>
           <nav className="hidden items-center gap-1 text-sm font-medium text-slate-600 md:flex">
             {[
               { href: "#journey", label: "How it works" },
               { href: "#modules", label: "Modules" },
               { href: "#score", label: "Score" },
+              { href: "#gateway", label: "Opportunities" },
               { href: "#colleges", label: "For colleges" },
+              { href: "#testimonials", label: "Stories" },
             ].map((link) => (
               <a key={link.href} href={link.href} className="rounded-lg px-3 py-2 transition-colors hover:bg-indigo-50 hover:text-indigo-600">
                 {link.label}
@@ -252,7 +271,7 @@ export default async function LandingPage() {
           </div>
           <div className="mt-6 flex flex-wrap gap-2 animate-fade-in-up delay-500">
             {TRUST.map((t) => (
-              <span key={t} className="flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-emerald-50 hover:text-emerald-700">
+              <span key={t} className="flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> {t}
               </span>
             ))}
@@ -280,7 +299,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Journey ── */}
-      <section id="journey" className="mx-auto max-w-6xl px-6 py-20">
+      <section id="journey" className="mx-auto max-w-6xl px-6 py-20 scroll-mt-20">
         <div className="mx-auto max-w-2xl text-center animate-fade-in-up">
           <p className="text-sm font-bold uppercase tracking-widest text-indigo-600">The student journey</p>
           <h2 className="mt-3 text-3xl font-extrabold sm:text-4xl">From Day 1 to placement, one continuous loop</h2>
@@ -348,7 +367,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Modules ── */}
-      <section id="modules" className="mx-auto max-w-6xl px-6 py-20">
+      <section id="modules" className="mx-auto max-w-6xl px-6 py-20 scroll-mt-20">
         <div className="mx-auto max-w-2xl text-center animate-fade-in-up">
           <p className="text-sm font-bold uppercase tracking-widest text-indigo-600">12 major modules</p>
           <h2 className="mt-3 text-3xl font-extrabold sm:text-4xl">Everything a student needs, orchestrated in one place</h2>
@@ -373,7 +392,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Readiness Score ── */}
-      <section id="score" className="relative border-y border-slate-100/80 bg-gradient-to-b from-slate-50/80 to-white py-20">
+      <section id="score" className="relative border-y border-slate-100/80 bg-gradient-to-b from-slate-50/80 to-white py-20 scroll-mt-20">
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 lg:grid-cols-2">
           <div className="animate-fade-in-left">
             <p className="text-sm font-bold uppercase tracking-widest text-indigo-600">Placement readiness score</p>
@@ -440,7 +459,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Opportunity Gateway ── */}
-      <section id="gateway" className="mx-auto max-w-6xl px-6 py-20">
+      <section id="gateway" className="mx-auto max-w-6xl px-6 py-20 scroll-mt-20">
         <div className="mx-auto max-w-2xl text-center animate-fade-in-up">
           <p className="text-sm font-bold uppercase tracking-widest text-indigo-600">Opportunity gateway</p>
           <h2 className="mt-3 text-3xl font-extrabold sm:text-4xl">We don&apos;t rebuild the web. We route it.</h2>
@@ -452,7 +471,12 @@ export default async function LandingPage() {
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {GATEWAYS.map((g, i) => (
             <Reveal key={g.name} delay={(i % 3) * 80} className="h-full">
-              <div className="group flex h-full items-center gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:border-slate-200 hover:shadow-lg hover:-translate-y-0.5">
+              <a
+                href={g.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex h-full items-center gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:border-slate-200 hover:shadow-lg hover:-translate-y-0.5"
+              >
                 <div
                   className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-base font-bold text-white shadow-md transition-transform group-hover:scale-110 group-hover:rotate-3`}
                   style={{ backgroundColor: g.color }}
@@ -460,17 +484,20 @@ export default async function LandingPage() {
                   {g.name.charAt(0)}
                 </div>
                 <div>
-                  <p className="font-bold text-slate-900">{g.name}</p>
+                  <p className="font-bold text-slate-900 flex items-center gap-1">
+                    {g.name}
+                    <ExternalLink className="h-3 w-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </p>
                   <p className="text-xs leading-relaxed text-slate-500">{g.text}</p>
                 </div>
-              </div>
+              </a>
             </Reveal>
           ))}
         </div>
       </section>
 
       {/* ── For Colleges ── */}
-      <section id="colleges" className="relative border-y border-slate-100/80 bg-gradient-to-b from-slate-50/80 to-white py-20">
+      <section id="colleges" className="relative border-y border-slate-100/80 bg-gradient-to-b from-slate-50/80 to-white py-20 scroll-mt-20">
         <div className="mx-auto max-w-6xl px-6">
           <div className="mx-auto max-w-2xl text-center animate-fade-in-up">
             <p className="text-sm font-bold uppercase tracking-widest text-indigo-600">For colleges &amp; mentors</p>
@@ -536,7 +563,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Testimonials ── */}
-      <section id="testimonials" className="mx-auto max-w-6xl px-6 py-20">
+      <section id="testimonials" className="mx-auto max-w-6xl px-6 py-20 scroll-mt-20">
         <div className="mx-auto max-w-2xl text-center animate-fade-in-up">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-100 px-3 py-1 text-xs font-semibold text-rose-600 mb-4">
             <Heart className="h-3 w-3" /> Loved by students
@@ -609,12 +636,12 @@ export default async function LandingPage() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="grid gap-8 md:grid-cols-4">
             <div>
-              <div className="flex items-center gap-2.5">
+              <Link href="/" className="flex items-center gap-2.5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-sm font-bold text-white shadow-md shadow-indigo-500/20">
                   CO
                 </div>
                 <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Career OS</span>
-              </div>
+              </Link>
               <p className="mt-3 text-sm leading-relaxed text-slate-500">
                 One intelligent system that continuously decides what a student should do next — from Day 1 to placement.
               </p>
@@ -635,13 +662,28 @@ export default async function LandingPage() {
   );
 }
 
-function FooterCol({ title, items }: { title: string; items: string[] }) {
+function FooterCol({ title, items }: { title: string; items: { label: string; href: string; external?: boolean }[] }) {
   return (
     <div>
       <p className="text-sm font-bold text-slate-900">{title}</p>
       <ul className="mt-3 space-y-2 text-sm text-slate-500">
         {items.map((item) => (
-          <li key={item} className="transition-colors hover:text-indigo-600 cursor-default">{item}</li>
+          <li key={item.label}>
+            {item.external ? (
+              <a
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-indigo-600"
+              >
+                {item.label}
+              </a>
+            ) : (
+              <Link href={item.href} className="transition-colors hover:text-indigo-600">
+                {item.label}
+              </Link>
+            )}
+          </li>
         ))}
       </ul>
     </div>
@@ -693,7 +735,7 @@ function DashboardPreview() {
                 <span className={t.done ? "text-slate-400 line-through" : "text-slate-700 font-medium"}>{t.title}</span>
               </div>
               <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${t.done ? "bg-emerald-50 text-emerald-600" : "bg-indigo-50 text-indigo-600"}`}>
-                {t.done ? "DONE" : "TODO"}
+                {t.done ? "DONE" : "TO DO"}
               </span>
             </div>
           ))}

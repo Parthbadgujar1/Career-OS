@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { OnboardingWizard } from "@/components/app/onboarding-wizard";
@@ -25,18 +24,18 @@ export default async function AssessmentPage({
   const takenTypes = new Set(taken.map((a) => a.type));
 
   if (!profile.onboardedAt || step === "onboard") {
-    const skills = await prisma.skill.findMany({ orderBy: [{ category: "asc" }, { sortOrder: "asc" }] });
-    const studentSkills = await prisma.studentSkill.findMany({
-      where: { studentId: profile.id },
-      include: { skill: true },
-    });
+    // Change-path flow only: the profile previously had data, so allow cancel.
+    const showBack = step === "onboard" && (profile.degree !== null || profile.targetRole !== null);
     return (
       <div className="mx-auto max-w-3xl">
+        {showBack && (
+          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <span className="font-semibold">Changing your path?</span> Your current roadmap and
+            profile stay intact until you save below — use{" "}
+            <span className="font-semibold">Back to dashboard</span> to keep things as they are.
+          </div>
+        )}
         <OnboardingWizard
-          skills={skills.map((s) => ({ id: s.id, name: s.name, category: s.category }))}
-          existingRatings={Object.fromEntries(
-            studentSkills.map((ss) => [ss.skillId, ss.selfRating])
-          )}
           existing={{
             degree: profile.degree ?? "",
             specialization: profile.specialization ?? "",
@@ -47,6 +46,7 @@ export default async function AssessmentPage({
             interests: profile.interests,
             industries: profile.preferredIndustries,
           }}
+          showBack={showBack}
         />
       </div>
     );
@@ -57,24 +57,17 @@ export default async function AssessmentPage({
     return (
       <div className="mx-auto max-w-3xl space-y-6">
         <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50 p-5">
-          <h1 className="text-2xl font-bold">You&apos;re all set up 🎉</h1>
+          <h1 className="text-2xl font-bold">Skill grading test 📝</h1>
           <p className="mt-1 text-sm text-slate-600">
-            Your personalized roadmap is ready. Test your baseline knowledge with the quick
-            assessments below, or skip straight to your dashboard.
+            No self-rating here — we measure your real level. Complete the quick tests below and
+            every skill is graded 1–5 from your answers. Once done, your roadmap is rebuilt around
+            exactly what you need to improve.
           </p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Link
-              href="/app"
-              className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
-            >
-              Skip — go to dashboard
-            </Link>
-          </div>
         </div>
         <div>
           <h2 className="text-lg font-bold">Baseline Assessment</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Complete the quick assessments below. Your roadmap adapts to your results.
+            Your skill grades and personalized roadmap are generated from these results.
           </p>
         </div>
         {assessmentSets.map((set) => (

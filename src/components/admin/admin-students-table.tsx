@@ -12,6 +12,9 @@ export interface AdminStudentRow {
   id: string;
   name: string;
   email: string;
+  mobile: string | null;
+  college: string | null;
+  city: string | null;
   targetRole: string | null;
   readinessScore: number;
   mentorId: string | null;
@@ -51,6 +54,9 @@ export function AdminStudentsTable({
         (s) =>
           s.name.toLowerCase().includes(q) ||
           s.email.toLowerCase().includes(q) ||
+          (s.mobile ?? "").toLowerCase().includes(q) ||
+          (s.college ?? "").toLowerCase().includes(q) ||
+          (s.city ?? "").toLowerCase().includes(q) ||
           (s.targetRole ?? "").toLowerCase().includes(q) ||
           (s.mentorName ?? "").toLowerCase().includes(q)
       );
@@ -101,6 +107,9 @@ export function AdminStudentsTable({
           <thead>
             <tr className="border-b text-left text-xs uppercase tracking-wide text-slate-400">
               <th className="pb-2 pr-4">Student</th>
+              <th className="pb-2 pr-4">Mobile</th>
+              <th className="pb-2 pr-4">College</th>
+              <th className="pb-2 pr-4">City</th>
               <th className="pb-2 pr-4">Target Role</th>
               <th className="pb-2 pr-4">Readiness</th>
               <th className="pb-2 pr-4">Mentor</th>
@@ -116,6 +125,9 @@ export function AdminStudentsTable({
                   <p className="font-medium">{s.name}</p>
                   <p className="text-xs text-slate-400">{s.email}</p>
                 </td>
+                <td className="py-2 pr-4 text-slate-600">{s.mobile ?? "—"}</td>
+                <td className="py-2 pr-4 text-slate-600 max-w-[160px] truncate" title={s.college ?? ""}>{s.college ?? "—"}</td>
+                <td className="py-2 pr-4 text-slate-600">{s.city ?? "—"}</td>
                 <td className="py-2 pr-4 text-slate-600">{s.targetRole ?? "—"}</td>
                 <td className="py-2 pr-4">
                   <div className="flex items-center gap-2">
@@ -147,7 +159,7 @@ export function AdminStudentsTable({
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-slate-500">
+                <td colSpan={10} className="py-8 text-center text-slate-500">
                   No students found.
                 </td>
               </tr>

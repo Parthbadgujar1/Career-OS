@@ -31,6 +31,42 @@ function signalFor(readiness: number): { label: string; variant: "success" | "wa
 
 type Filter = "all" | "needs-support" | "on-track";
 
+function FeedbackComposer({
+  value,
+  onChange,
+  onCancel,
+  onSend,
+  pending,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onCancel: () => void;
+  onSend: () => void;
+  pending: boolean;
+}) {
+  return (
+    <div className="mt-2 rounded-lg border border-indigo-100 bg-indigo-50/40 p-3 space-y-2">
+      <Textarea
+        autoFocus
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Write feedback — the student will see it as a notification..."
+        className="min-h-[70px] bg-white"
+      />
+      <div className="flex justify-end gap-2">
+        <Button variant="ghost" size="sm" onClick={onCancel}>
+          <X className="h-4 w-4 mr-1" />
+          Cancel
+        </Button>
+        <Button variant="gradient" size="sm" disabled={!value.trim() || pending} onClick={onSend}>
+          {pending ? "Sending..." : "Send feedback"}
+          <Send className="h-3.5 w-3.5 ml-1" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function MentorStudentsPanel({ students }: { students: MentorStudentRow[] }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -84,39 +120,15 @@ export function MentorStudentsPanel({ students }: { students: MentorStudentRow[]
     });
   };
 
-  const FeedbackComposer = ({ studentId }: { studentId: string }) => (
-    <div className="mt-2 rounded-lg border border-indigo-100 bg-indigo-50/40 p-3 space-y-2">
-      <Textarea
-        autoFocus
-        value={feedbackText}
-        onChange={(e) => setFeedbackText(e.target.value)}
-        placeholder="Write feedback — the student will see it as a notification..."
-        className="min-h-[70px] bg-white"
-      />
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            setFeedbackFor(null);
-            setFeedbackText("");
-          }}
-        >
-          <X className="h-4 w-4 mr-1" />
-          Cancel
-        </Button>
-        <Button
-          variant="gradient"
-          size="sm"
-          disabled={!feedbackText.trim() || isPending}
-          onClick={() => sendFeedback(studentId)}
-        >
-          {isPending ? "Sending..." : "Send feedback"}
-          <Send className="h-3.5 w-3.5 ml-1" />
-        </Button>
-      </div>
-    </div>
-  );
+  const composerProps = {
+    value: feedbackText,
+    onChange: setFeedbackText,
+    onCancel: () => {
+      setFeedbackFor(null);
+      setFeedbackText("");
+    },
+    pending: isPending,
+  };
 
   return (
     <>
@@ -187,7 +199,7 @@ export function MentorStudentsPanel({ students }: { students: MentorStudentRow[]
                           </span>
                         ) : feedbackFor === s.id ? (
                           <div className="w-64">
-                            <FeedbackComposer studentId={s.id} />
+                            <FeedbackComposer {...composerProps} onSend={() => sendFeedback(s.id)} />
                           </div>
                         ) : (
                           <Button variant="outline" size="sm" onClick={() => setFeedbackFor(s.id)}>
@@ -260,7 +272,7 @@ export function MentorStudentsPanel({ students }: { students: MentorStudentRow[]
                       </span>
                     ) : feedbackFor === s.id ? (
                       <div className="w-64">
-                        <FeedbackComposer studentId={s.id} />
+                        <FeedbackComposer {...composerProps} onSend={() => sendFeedback(s.id)} />
                       </div>
                     ) : (
                       <Button variant="ghost" size="sm" onClick={() => setFeedbackFor(s.id)}>

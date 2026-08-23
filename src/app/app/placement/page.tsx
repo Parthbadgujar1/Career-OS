@@ -60,7 +60,7 @@ const HR_QUESTIONS = [
 const COMPANY_TARGETS: Record<string, string> = {
   coding: "/app/coding",
   quizzes: "/app/quizzes",
-  aptitude: "/app/placement",
+  aptitude: "/app/placement#aptitude",
   interviews: "/app/interviews",
 };
 
@@ -108,7 +108,7 @@ export default async function PlacementPage() {
         </CardContent>
       </Card>
 
-      <section>
+      <section id="aptitude" className="scroll-mt-20">
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">Aptitude practice</h2>
         <div className="grid gap-6 lg:grid-cols-3">
           {APTITUDE_PRACTICE_SETS.map((set) => (

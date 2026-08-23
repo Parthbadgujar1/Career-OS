@@ -10,6 +10,14 @@ const registerSchema = z.object({
   email: z.string().email("Enter a valid email"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   role: z.enum(["STUDENT", "MENTOR"]).default("STUDENT"),
+  mobile: z
+    .string()
+    .trim()
+    .regex(/^[0-9+\-\s]{10,15}$/, "Enter a valid mobile number (10–15 digits)")
+    .optional()
+    .or(z.literal("")),
+  college: z.string().trim().max(200, "College name is too long").optional().or(z.literal("")),
+  city: z.string().trim().max(100, "City name is too long").optional().or(z.literal("")),
 });
 
 export async function registerAction(_prev: unknown, formData: FormData) {
@@ -18,13 +26,16 @@ export async function registerAction(_prev: unknown, formData: FormData) {
     email: formData.get("email"),
     password: formData.get("password"),
     role: formData.get("role") || "STUDENT",
+    mobile: formData.get("mobile"),
+    college: formData.get("college"),
+    city: formData.get("city"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  const { name, email, password, role } = parsed.data;
+  const { name, email, password, role, mobile, college, city } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
   if (existing) return { error: "An account with this email already exists." };
@@ -41,7 +52,14 @@ export async function registerAction(_prev: unknown, formData: FormData) {
   });
 
   if (role === "STUDENT") {
-    await prisma.studentProfile.create({ data: { userId: user.id } });
+    await prisma.studentProfile.create({
+      data: {
+        userId: user.id,
+        mobile: mobile || null,
+        college: college || null,
+        city: city || null,
+      },
+    });
   }
 
   const redirectTo = role === "MENTOR" ? "/mentor" : "/app/assessment";

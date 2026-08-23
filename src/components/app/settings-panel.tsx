@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/input";
 import { Label } from "@/components/ui/input";
 import { updateProfileAction } from "@/server/actions/profile";
+import { updatePreferencesAction } from "@/server/actions/profile";
 import { deleteAccountAction } from "@/server/actions/account";
 import { signOutAction } from "@/server/actions/session";
 import {
@@ -26,6 +27,10 @@ export interface SettingsProfile {
   targetRoles: string[];
   githubUrl: string;
   linkedinUrl: string;
+  mobile: string;
+  city: string;
+  college: string;
+  preferences?: Record<string, boolean>;
 }
 
 const NOTIFICATIONS = [
@@ -42,8 +47,6 @@ const PRIVACY = [
   { key: "shareWithMentor", label: "Share Progress with Mentor", desc: "Automatically share weekly reports with your mentor" },
 ];
 
-const STORAGE_KEY = "career-os:preferences";
-
 export function SettingsPanel({ profile }: { profile: SettingsProfile }) {
   const router = useRouter();
   const [form, setForm] = useState<SettingsProfile>(() =>
@@ -53,22 +56,19 @@ export function SettingsPanel({ profile }: { profile: SettingsProfile }) {
   );
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [toggles, setToggles] = useState<Record<string, boolean>>(() => {
-    if (typeof window === "undefined") return {};
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
-    }
-  });
+  const [toggles, setToggles] = useState<Record<string, boolean>>(profile.preferences ?? {});
+  const [savingKey, setSavingKey] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const toggle = (key: string) => {
     const next = { ...toggles, [key]: !toggles[key] };
     setToggles(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    setSavingKey(key);
+    startTransition(async () => {
+      await updatePreferencesAction(key, next[key]);
+      setSavingKey(null);
+    });
   };
 
   const saveProfile = (e: React.FormEvent) => {
@@ -83,6 +83,9 @@ export function SettingsPanel({ profile }: { profile: SettingsProfile }) {
     fd.set("targetRole", form.targetRoles[0] ?? "");
     fd.set("githubUrl", form.githubUrl);
     fd.set("linkedinUrl", form.linkedinUrl);
+    fd.set("mobile", form.mobile);
+    fd.set("city", form.city);
+    fd.set("college", form.college);
     startTransition(async () => {
       const result = await updateProfileAction(fd);
       if ("ok" in result) {
@@ -139,6 +142,37 @@ export function SettingsPanel({ profile }: { profile: SettingsProfile }) {
                   <Label htmlFor="email">Email</Label>
                   <Input id="email" type="email" value={form.email} disabled />
                 </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="mobile">Mobile Number</Label>
+                  <Input
+                    id="mobile"
+                    type="tel"
+                    value={form.mobile}
+                    onChange={(e) => setForm({ ...form, mobile: e.target.value })}
+                    placeholder="9876543210"
+                    pattern="[0-9+\-\s]{10,15}"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    value={form.city}
+                    onChange={(e) => setForm({ ...form, city: e.target.value })}
+                    placeholder="Your city"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="college">College</Label>
+                <Input
+                  id="college"
+                  value={form.college}
+                  onChange={(e) => setForm({ ...form, college: e.target.value })}
+                  placeholder="Your college name"
+                />
               </div>
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-1.5">
@@ -237,8 +271,10 @@ export function SettingsPanel({ profile }: { profile: SettingsProfile }) {
                   type="checkbox"
                   checked={!!toggles[n.key]}
                   onChange={() => toggle(n.key)}
+                  disabled={savingKey !== null}
                   className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                 />
+                {savingKey === n.key && <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />}
                 <div>
                   <p className="font-medium">{n.label}</p>
                   <p className="text-sm text-slate-500">{n.desc}</p>
@@ -246,7 +282,7 @@ export function SettingsPanel({ profile }: { profile: SettingsProfile }) {
               </div>
             </div>
           ))}
-          <p className="text-xs text-slate-400">Preferences are saved on this device.</p>
+          <p className="text-xs text-slate-400">Saved to your account — syncs across devices.</p>
         </CardContent>
       </Card>
 
@@ -258,19 +294,23 @@ export function SettingsPanel({ profile }: { profile: SettingsProfile }) {
         <CardContent className="space-y-3">
           {PRIVACY.map((p) => (
             <div key={p.key} className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">{p.label}</p>
-                <p className="text-sm text-slate-500">{p.desc}</p>
+              <div className="flex items-center gap-3">
+                <div>
+                  <p className="font-medium">{p.label}</p>
+                  <p className="text-sm text-slate-500">{p.desc}</p>
+                </div>
+                {savingKey === p.key && <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />}
+                <input
+                  type="checkbox"
+                  checked={!!toggles[p.key]}
+                  onChange={() => toggle(p.key)}
+                  disabled={savingKey !== null}
+                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
               </div>
-              <input
-                type="checkbox"
-                checked={!!toggles[p.key]}
-                onChange={() => toggle(p.key)}
-                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-              />
             </div>
           ))}
-          <p className="text-xs text-slate-400">Preferences are saved on this device.</p>
+          <p className="text-xs text-slate-400">Saved to your account — syncs across devices.</p>
           <form action={signOutAction}>
             <Button variant="outline" className="w-full justify-start text-rose-600 hover:bg-rose-50">
               <LogOut className="h-4 w-4 mr-2" />

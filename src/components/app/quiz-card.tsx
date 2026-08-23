@@ -18,29 +18,54 @@ export function QuizCard({
   lastScore?: number;
 }) {
   const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [result, setResult] = useState<number | null>(lastScore ?? null);
+  const [result, setResult] = useState<number | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   const [pending, setPending] = useState(false);
 
   const allAnswered = quiz.questions.length > 0 && quiz.questions.every((_, i) => answers[i] !== undefined);
+  const showResult = submitted || (taken && lastScore != null);
+  const score = result ?? (lastScore ?? 0);
 
   async function submit() {
     setPending(true);
     const res = await submitQuizAction(quiz.id, answers);
-    if (res && "ok" in res) setResult(res.score);
+    if (res && "ok" in res) {
+      setResult(res.score);
+      setSubmitted(true);
+    }
     setPending(false);
   }
 
-  if (result !== null && taken) {
-    const pct = Math.round((result / quiz.questions.length) * 100);
+  function retake() {
+    setAnswers({});
+    setResult(null);
+    setSubmitted(false);
+  }
+
+  if (showResult) {
+    const pct = Math.round((score / quiz.questions.length) * 100);
     return (
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between">
-          <p className="font-medium">{quiz.title}</p>
+          <div>
+            <p className="font-medium">{quiz.title}</p>
+            <p className="text-xs text-slate-400">
+              {quiz.topic} · {quiz.questions.length} questions · {quiz.difficulty}
+            </p>
+          </div>
           <Badge variant={pct >= 70 ? "success" : pct >= 40 ? "warning" : "danger"}>
-            {result}/{quiz.questions.length}
+            {score}/{quiz.questions.length}
           </Badge>
         </div>
-        <p className="text-xs text-slate-400">{quiz.topic}</p>
+        <div className="mt-3 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
+          <span className="text-sm text-slate-600">
+            Score: <span className="font-bold text-slate-900">{pct}%</span> —{" "}
+            {pct >= 70 ? "Great job!" : pct >= 40 ? "Good, keep practicing." : "Keep revising this topic."}
+          </span>
+          <Button variant="outline" size="sm" onClick={retake}>
+            Retake quiz
+          </Button>
+        </div>
       </div>
     );
   }

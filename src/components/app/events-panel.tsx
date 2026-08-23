@@ -15,6 +15,7 @@ export interface EventRow {
   description: string | null;
   startsAt: string;
   endsAt: string | null;
+  location: string | null;
   url: string | null;
   registered: boolean;
 }
@@ -87,10 +88,10 @@ export function EventsPanel({ events }: { events: EventRow[] }) {
               <Clock className="h-4 w-4" />
               <span>{new Date(event.startsAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>
             </div>
-            {!event.endsAt && (
+            {event.location && (
               <div className="flex items-center gap-2 text-sm text-slate-600">
                 <MapPin className="h-4 w-4" />
-                <span>Online</span>
+                <span>{event.location}</span>
               </div>
             )}
             <div className="flex gap-2 pt-2">

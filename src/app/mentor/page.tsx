@@ -2,8 +2,10 @@ import { requireMentor } from "@/lib/auth-helper";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge, Progress } from "@/components/ui/badge";
-import { Activity, Award } from "lucide-react";
+import { Activity, Award, Sparkles } from "lucide-react";
 import { MentorStudentsPanel, type MentorStudentRow } from "@/components/mentor/mentor-students-panel";
+import { MentorAiInsights } from "@/components/mentor/mentor-ai-insights";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
@@ -182,6 +184,17 @@ export default async function MentorPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* AI Cohort Insights */}
+        <Suspense fallback={
+          <Card className="animate-pulse border-indigo-50 bg-indigo-50/10">
+            <CardContent className="h-48 flex items-center justify-center text-sm text-indigo-400 font-medium">
+              <Sparkles className="h-5 w-5 animate-spin mr-2" /> Loading cohort AI insights...
+            </CardContent>
+          </Card>
+        }>
+          <MentorAiInsights students={rows} />
+        </Suspense>
 
         {/* Intervention list + All Mentees (live search/filter/feedback) */}
         <Card id="mentees" className="scroll-mt-24">

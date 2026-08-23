@@ -16,6 +16,10 @@ export default async function SettingsPage() {
     targetRoles: fromJson<string[]>(profile.targetRoles, []),
     githubUrl: profile.githubUrl ?? "",
     linkedinUrl: profile.linkedinUrl ?? "",
+    mobile: profile.mobile ?? "",
+    city: profile.city ?? "",
+    college: profile.college ?? "",
+    preferences: fromJson<Record<string, boolean>>(profile.preferences, {}),
   };
 
   return (

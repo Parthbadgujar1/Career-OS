@@ -50,3 +50,8 @@ prisma/dev.db
 next-env.d.ts
 
 /src/generated/prisma
+
+# local artifacts
+.next-dev.log
+career-os-main*.zip
+/career-os-main/

@@ -78,7 +78,9 @@ export default async function AdminMentorsPage() {
                     <p className="font-semibold">{m.name}</p>
                     <p className="text-xs text-slate-400 flex items-center gap-1">
                       <Mail className="h-3 w-3" />
-                      {m.email}
+                      <a href={`mailto:${m.email}`} className="hover:text-indigo-600 hover:underline">
+                        {m.email}
+                      </a>
                     </p>
                   </div>
                 </div>

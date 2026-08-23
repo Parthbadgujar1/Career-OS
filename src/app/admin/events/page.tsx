@@ -81,7 +81,16 @@ export default async function AdminEventsPage() {
                       )}
                     </div>
                   </div>
-                  <Badge variant="success">Scheduled</Badge>
+                  {(() => {
+                    const now = Date.now();
+                    const ended = ev.endsAt ? ev.endsAt.getTime() < now : ev.startsAt.getTime() + 2 * 3600000 < now;
+                    const live = ev.startsAt.getTime() <= now && !ended;
+                    return (
+                      <Badge variant={live ? "success" : ended ? "secondary" : "indigo"}>
+                        {live ? "Live now" : ended ? "Ended" : "Upcoming"}
+                      </Badge>
+                    );
+                  })()}
                 </div>
               </div>
             ))}
@@ -116,6 +125,10 @@ export default async function AdminEventsPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="endsAt">Ends</Label>
                 <Input id="endsAt" name="endsAt" type="datetime-local" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="location">Location (optional)</Label>
+                <Input id="location" name="location" placeholder="e.g. Room 204, Online (Zoom), Google Meet" />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="url">Link (optional)</Label>

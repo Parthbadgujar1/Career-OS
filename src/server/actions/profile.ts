@@ -19,8 +19,14 @@ export async function updateProfileAction(
     targetRoles[0] ?? ((formData.get("targetRole") as string)?.trim() || null);
   const githubUrl = (formData.get("githubUrl") as string)?.trim() || null;
   const linkedinUrl = (formData.get("linkedinUrl") as string)?.trim() || null;
+  const mobile = (formData.get("mobile") as string)?.trim() || null;
+  const city = (formData.get("city") as string)?.trim() || null;
+  const college = (formData.get("college") as string)?.trim() || null;
 
   if (!name) return { error: "Name is required." };
+  if (mobile && !/^[0-9+\-\s]{10,15}$/.test(mobile)) {
+    return { error: "Mobile number must be 10–15 digits (spaces, + and - allowed)." };
+  }
 
   await prisma.user.update({ where: { id: user.id }, data: { name } });
   await prisma.studentProfile.update({
@@ -32,6 +38,9 @@ export async function updateProfileAction(
       targetRoles: JSON.stringify(targetRoles),
       githubUrl,
       linkedinUrl,
+      mobile,
+      city,
+      college,
     },
   });
 
@@ -39,4 +48,39 @@ export async function updateProfileAction(
   revalidatePath("/app/settings");
   revalidatePath("/app");
   return { ok: true };
+}
+
+const PREFERENCE_KEYS = [
+  "taskReminders",
+  "weeklyReport",
+  "opportunityAlerts",
+  "eventReminders",
+  "mentorMessages",
+  "profileVisibility",
+  "leaderboards",
+  "shareWithMentor",
+] as const;
+
+export type PreferenceKeys = (typeof PREFERENCE_KEYS)[number];
+
+export async function updatePreferencesAction(
+  key: string,
+  enabled: boolean
+): Promise<{ ok: true } | { error: string }> {
+  const { profile } = await requireStudentProfile();
+  if (!PREFERENCE_KEYS.includes(key as PreferenceKeys)) return { error: "Unknown preference." };
+
+  const current = fromJson<Record<string, boolean>>(profile.preferences, {});
+  await prisma.studentProfile.update({
+    where: { id: profile.id },
+    data: { preferences: JSON.stringify({ ...current, [key]: enabled }) },
+  });
+
+  revalidatePath("/app/settings");
+  return { ok: true };
+}
+
+export async function getPreference(profile: { preferences: string }, key: PreferenceKeys): Promise<boolean> {
+  const prefs = fromJson<Record<string, boolean>>(profile.preferences, {});
+  return prefs[key] ?? true;
 }

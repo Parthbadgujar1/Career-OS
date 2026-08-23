@@ -114,7 +114,7 @@ export default async function MentorInterviewsPage() {
                 <p className="flex items-center gap-1 text-xs text-slate-400">
                   <Users className="h-3.5 w-3.5" />
                   {active.length}/{s.maxStudents} booked
-                  {s.meetUrl && <> · <span className="inline-flex items-center gap-1"><Video className="h-3 w-3" />{s.meetUrl}</span></>}
+                  {s.meetUrl && <> · <a href={s.meetUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-indigo-600 hover:underline"><Video className="h-3 w-3" />Join link</a></>}
                 </p>
               </CardHeader>
               {s.bookings.length > 0 && (

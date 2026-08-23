@@ -2,8 +2,11 @@ import { requireAdmin } from "@/lib/auth-helper";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge, Progress } from "@/components/ui/badge";
-import { Users, UserCheck, Award, ClipboardCheck, BarChart3, Briefcase, TrendingUp } from "lucide-react";
+import { Users, UserCheck, Award, ClipboardCheck, BarChart3, Briefcase, TrendingUp, Sparkles } from "lucide-react";
 import { AdminStudentsTable } from "@/components/admin/admin-students-table";
+import { RegistrationExport } from "@/components/admin/registration-export";
+import { AdminAiInsights } from "@/components/admin/admin-ai-insights";
+import { Suspense } from "react";
 
 function startOfToday() {
   const d = new Date();
@@ -21,7 +24,7 @@ const WEEK_AGO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 export default async function AdminPage() {
   const admin = await requireAdmin();
 
-  const [students, tasksToday, reports, opportunityActions, mentorUsers] = await Promise.all([
+  const [students, tasksToday, reports, opportunityActions, mentorUsers, codingSolved, mockInterviewsCount, skillRatings] = await Promise.all([
     prisma.studentProfile.findMany({
       include: {
         user: { select: { name: true, email: true } },
@@ -50,6 +53,12 @@ export default async function AdminPage() {
       select: { id: true, name: true, _count: { select: { mentorStudents: true } } },
       orderBy: { name: "asc" },
     }),
+    prisma.codingSubmission.count({ where: { status: "SOLVED" } }),
+    prisma.mockInterview.count(),
+    prisma.studentSkill.findMany({
+      where: { selfRating: { lte: 2 } },
+      include: { skill: true },
+    }),
   ]);
 
   const onboarded = students.filter((s) => s.onboardedAt).length;
@@ -75,6 +84,27 @@ export default async function AdminPage() {
     completed: countAction("COMPLETED"),
   };
 
+  const gapCounts = new Map<string, number>();
+  for (const s of skillRatings) {
+    gapCounts.set(s.skill.name, (gapCounts.get(s.skill.name) ?? 0) + 1);
+  }
+  const topSkillsGaps = [...gapCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name, count]) => ({ name, count }));
+
+  const metricsPayload = {
+    totalStudents,
+    onboardedStudents: onboarded,
+    avgReadiness,
+    avgTaskCompletion: avgCompletion,
+    codingSolved,
+    mockInterviewsCount,
+    applicationsCount: pipeline.applied,
+    topSkillsGaps,
+    pipeline,
+  };
+
   const distribution = [
     { bucket: "0–20", count: 0, color: "#f43f5e" },
     { bucket: "21–40", count: 0, color: "#f59e0b" },
@@ -93,6 +123,9 @@ export default async function AdminPage() {
     id: s.id,
     name: s.user.name ?? "—",
     email: s.user.email,
+    mobile: s.mobile,
+    college: s.college,
+    city: s.city,
     targetRole: s.targetRole,
     readinessScore: s.readinessScore,
     mentorId: s.mentorId,
@@ -186,6 +219,17 @@ export default async function AdminPage() {
         </Card>
       </div>
 
+      {/* AI Platform Insights */}
+      <Suspense fallback={
+        <Card className="animate-pulse border-purple-50 bg-purple-50/10">
+          <CardContent className="h-48 flex items-center justify-center text-sm text-purple-400 font-medium">
+            <Sparkles className="h-5 w-5 animate-spin mr-2" /> Loading platform AI insights...
+          </CardContent>
+        </Card>
+      }>
+        <AdminAiInsights metrics={metricsPayload} />
+      </Suspense>
+
       <div id="pipeline" className="grid gap-6 lg:grid-cols-2 scroll-mt-24">
         <Card>
           <CardHeader>
@@ -240,7 +284,10 @@ export default async function AdminPage() {
           <CardDescription>
             {onboarded}/{totalStudents} onboarded · {readyStudents} ready for placement
           </CardDescription>
-          <AdminStudentsTable students={rows} mentors={mentors} />
+          <div className="mt-4 space-y-4">
+            <RegistrationExport students={rows} />
+            <AdminStudentsTable students={rows} mentors={mentors} />
+          </div>
         </CardHeader>
       </Card>
     </div>

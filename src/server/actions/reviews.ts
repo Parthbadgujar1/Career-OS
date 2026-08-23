@@ -7,7 +7,13 @@ import { reviewResume, reviewProfile, recommendProjects } from "@/lib/ai/reviews
 import { fromJson } from "@/lib/utils";
 import { snapshotReadiness } from "@/lib/scoring/readiness";
 
-async function runResumeReview(profileId: string, role: string, resumeText: string, resumeId: string) {
+async function runResumeReview(
+  profileId: string,
+  role: string,
+  resumeText: string,
+  resumePdfBase64: string | null,
+  resumeId: string
+) {
   const skills = await prisma.studentSkill.findMany({
     where: { studentId: profileId },
     include: { skill: true },
@@ -27,7 +33,8 @@ async function runResumeReview(profileId: string, role: string, resumeText: stri
       const review = await reviewResume({
         role,
         skills: skills.map((s) => s.skill.name),
-        resumeText,
+        resumeText: resumePdfBase64 ? undefined : resumeText,
+        resumePdfBase64: resumePdfBase64 ?? undefined,
         projects: projects.map((p) => `${p.title}: ${p.description ?? ""}`),
       });
       atsScore = review.atsScore;
@@ -35,6 +42,9 @@ async function runResumeReview(profileId: string, role: string, resumeText: stri
       missingSkills = review.missingSkills;
       suggestions = review.suggestions;
       impactStatements = review.impactStatements;
+      if (review.extractedText) {
+        resumeText = review.extractedText;
+      }
     } catch (e) {
       console.error("[reviews] AI resume review failed", e);
     }
@@ -53,6 +63,11 @@ async function runResumeReview(profileId: string, role: string, resumeText: stri
       : ["Add keywords from the target role job description", "Quantify impact with numbers", "Keep it to one page for campus roles"];
   }
 
+  await prisma.resume.update({
+    where: { id: resumeId },
+    data: { content: resumeText, atsScore },
+  });
+
   await prisma.resumeReview.create({
     data: {
       resumeId,
@@ -68,10 +83,27 @@ async function runResumeReview(profileId: string, role: string, resumeText: stri
 
 export async function reviewResumeAction(
   formData: FormData
-): Promise<{ ok: true; atsScore: number; summary: string } | { error: string }> {
+): Promise<{ ok: true; atsScore: number; summary: string; content?: string } | { error: string }> {
   const { profile } = await requireStudentProfile();
   const resumeText = (formData.get("resumeText") as string) || "";
   const role = (formData.get("role") as string) || profile.targetRole || "";
+
+  const file = formData.get("resumeFile") as File | null;
+  let base64Data: string | null = null;
+
+  if (file && file.size > 0) {
+    try {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      base64Data = buffer.toString("base64");
+    } catch (e) {
+      console.error("Failed to read uploaded PDF file", e);
+      return { error: "Failed to read uploaded PDF file." };
+    }
+  }
+
+  if (!resumeText && !base64Data) {
+    return { error: "Please paste your resume text or upload a PDF file." };
+  }
 
   const version = (await prisma.resume.count({ where: { studentId: profile.id } })) + 1;
   const resume = await prisma.resume.create({
@@ -79,15 +111,17 @@ export async function reviewResumeAction(
       studentId: profile.id,
       version,
       role,
-      content: resumeText,
+      content: resumeText || "PDF upload processing...",
     },
   });
 
-  const { atsScore, summary } = await runResumeReview(profile.id, role, resumeText, resume.id);
+  const { atsScore, summary } = await runResumeReview(profile.id, role, resumeText, base64Data, resume.id);
+
+  const updatedResume = await prisma.resume.findUnique({ where: { id: resume.id } });
 
   await snapshotReadiness(prisma, profile.id);
   revalidatePath("/app/reviews");
-  return { ok: true, atsScore, summary };
+  return { ok: true, atsScore, summary, content: updatedResume?.content || resumeText };
 }
 
 export async function buildResumeAction(
@@ -124,7 +158,7 @@ export async function buildResumeAction(
     },
   });
 
-  const result = await runResumeReview(profile.id, role, resumeText, resume.id);
+  const result = await runResumeReview(profile.id, role, resumeText, null, resume.id);
 
   await snapshotReadiness(prisma, profile.id);
   revalidatePath("/app/reviews");
@@ -139,6 +173,68 @@ export async function reviewProfileAction(
   const url = (formData.get("url") as string) || "";
   const details = (formData.get("details") as string) || "";
 
+  let evaluatedDetails = details;
+
+  if (platform === "GITHUB" && url) {
+    const match = url.match(/github\.com\/([a-zA-Z0-9_-]+)/i);
+    if (match && match[1]) {
+      try {
+        const username = match[1];
+        const userRes = await fetch(`https://api.github.com/users/${username}`, {
+          headers: { "User-Agent": "Career-OS-Agent" }
+        });
+        const repoRes = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=10`, {
+          headers: { "User-Agent": "Career-OS-Agent" }
+        });
+        if (userRes.ok && repoRes.ok) {
+          const userData = await userRes.json();
+          interface GitHubRepo {
+            name: string;
+            description: string | null;
+            language: string | null;
+            stargazers_count: number;
+          }
+          const reposData = (await repoRes.json()) as GitHubRepo[];
+          evaluatedDetails = `Autofetched GitHub Profile Data:
+Username: ${userData.login}
+Name: ${userData.name || "N/A"}
+Bio: ${userData.bio || "N/A"}
+Public Repositories: ${userData.public_repos}
+Followers: ${userData.followers} / Following: ${userData.following}
+
+Recent Public Repos:
+${reposData.map((r) => `- ${r.name}: ${r.description || "No description"} (Language: ${r.language || "N/A"}, Stars: ${r.stargazers_count})`).join("\n")}
+
+User Entered Details:
+${details || "None provided"}`;
+        }
+      } catch (e) {
+        console.error("Failed to autofetch GitHub profile info", e);
+      }
+    }
+  } else if (platform === "LINKEDIN" && url) {
+    const skills = await prisma.studentSkill.findMany({
+      where: { studentId: profile.id },
+      include: { skill: true }
+    });
+    const projects = await prisma.project.findMany({
+      where: { studentId: profile.id }
+    });
+    
+    evaluatedDetails = `LinkedIn Profile Review for URL: ${url}
+Candidate Target Role: ${profile.targetRole || "Software Developer"}
+Readiness Score: ${profile.readinessScore}/100
+
+Skills listed in profile database:
+${skills.map(s => `- ${s.skill.name} (${s.selfRating}/5)`).join("\n")}
+
+Projects in database:
+${projects.map(p => `- ${p.title}: ${p.description || "No description"}`).join("\n")}
+
+User Entered Details:
+${details || "LinkedIn URL provided. Performing positioning evaluation based on target role, skills gaps, and project evidence."}`;
+  }
+
   let score = platform === "LINKEDIN" ? 45 : 50;
   let findings: string[] = [];
   let suggestions: string[] = [];
@@ -149,7 +245,7 @@ export async function reviewProfileAction(
         platform,
         role: profile.targetRole ?? "",
         url,
-        details,
+        details: evaluatedDetails,
       });
       score = review.score;
       findings = review.findings;

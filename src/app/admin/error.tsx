@@ -28,7 +28,7 @@ export default function AdminError({ error, reset }: { error: Error & { digest?:
               Retry
             </Button>
             <Button variant="outline" asChild>
-              <a href="/app">Go to Dashboard</a>
+              <a href="/admin">Go to Admin Dashboard</a>
             </Button>
           </div>
         </CardContent>

@@ -6,6 +6,9 @@ import { requireStudentProfile, requireMentor } from "@/lib/auth-helper";
 import { AI_QUESTION_BANK, gradeAiAnswer, INTERVIEW_CRITERIA, AI_MAX_SCORE } from "@/lib/interview-data";
 import { snapshotReadiness } from "@/lib/scoring/readiness";
 import { fromJson } from "@/lib/utils";
+import { generateObject } from "ai";
+import { z } from "zod";
+import { getModel } from "@/lib/ai/client";
 
 type AiType = "TECHNICAL" | "HR" | "BEHAVIORAL";
 
@@ -137,31 +140,101 @@ export async function submitAiInterviewAction(
   const type = ((formData.get("type") as string) || "TECHNICAL") as AiType;
   const role = (formData.get("role") as string) || profile.targetRole || "";
   const answersRaw = fromJson<Record<string, string>>((formData.get("answers") as string) ?? "{}", {});
+  const questionsRaw = fromJson<Array<{ id: string; question: string; idealKeywords: string[]; maxScore: number }>>(formData.get("questions") as string, []);
 
-  const bank = AI_QUESTION_BANK[type] ?? AI_QUESTION_BANK.TECHNICAL;
+  const bank = questionsRaw.length > 0 ? questionsRaw : (AI_QUESTION_BANK[type] ?? AI_QUESTION_BANK.TECHNICAL);
   const criteria = INTERVIEW_CRITERIA[type] ?? INTERVIEW_CRITERIA.TECHNICAL;
 
-  let total = 0;
+  let percent = 0;
   const perQuestion: Record<string, { score: number; comment: string; question: string }> = {};
-  for (const q of bank) {
-    const answer = answersRaw[q.id] ?? "";
-    const g = gradeAiAnswer(answer, q);
-    perQuestion[q.id] = { score: g.score, comment: g.comment, question: q.question };
-    total += g.score;
+  let criteriaScores: Record<string, number> = {};
+  let feedbackList: string[] = [];
+  let weakAreas: string[] = [];
+
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      const qaFormatted = bank.map((q) => {
+        const answer = answersRaw[q.id] || "(no answer provided)";
+        return `Question ID: ${q.id}\nQuestion: ${q.question}\nStudent's Answer: """${answer}"""\nIdeal Concepts: ${q.idealKeywords.join(", ")}`;
+      }).join("\n\n");
+
+      const prompt = `You are a professional mock interviewer grading a student's "${type}" interview for a "${role}" role.
+Evaluate the student's responses to the following questions.
+
+${qaFormatted}
+
+For the evaluation:
+1. Grade each question response out of 100 based on accuracy, depth, relevance, and completeness, referencing the Ideal Concepts.
+2. Provide a constructive, professional 1-2 sentence comment for each question response.
+3. Compute the overall score as the average of the question scores.
+4. Score the student on each of the following criteria (0-100): ${criteria.join(", ")}.
+5. Generate a checklist of feedback points (up to 5 items) for improvement.
+6. Identify weak areas (questions or concepts where the student scored below 60).
+
+Return the grading matching the schema.`;
+
+      const { object } = await generateObject({
+        model: getModel(),
+        schema: z.object({
+          score: z.number().int().min(0).max(100),
+          perQuestion: z.record(
+            z.string(),
+            z.object({
+              score: z.number().int().min(0).max(100),
+              comment: z.string(),
+            })
+          ),
+          criteriaScores: z.record(z.string(), z.number().int().min(0).max(100)),
+          feedbackList: z.array(z.string()),
+          weakAreas: z.array(z.string()),
+        }),
+        schemaName: "interview_grading",
+        schemaDescription: "AI grading of mock interview",
+        prompt,
+      });
+
+      percent = object.score;
+      criteriaScores = object.criteriaScores;
+      feedbackList = object.feedbackList;
+      weakAreas = object.weakAreas;
+
+      for (const q of bank) {
+        const grade = object.perQuestion[q.id] || { score: 0, comment: "No answer evaluated." };
+        perQuestion[q.id] = {
+          score: grade.score,
+          comment: grade.comment,
+          question: q.question,
+        };
+      }
+    } catch (e) {
+      console.error("[interviews] AI grading failed, falling back to deterministic", e);
+    }
   }
 
-  const avgScore = Math.round(total / Math.max(1, bank.length));
-  const criteriaScores: Record<string, number> = {};
-  criteria.forEach((c, i) => {
-    criteriaScores[c] = Math.min(100, avgScore + (i === 0 ? 5 : i === 1 ? 0 : -5));
-  });
+  // Fallback if AI grading is skipped or failed
+  if (percent === 0 || Object.keys(perQuestion).length === 0) {
+    let total = 0;
+    for (const q of bank) {
+      const answer = answersRaw[q.id] ?? "";
+      const g = gradeAiAnswer(answer, q);
+      perQuestion[q.id] = { score: g.score, comment: g.comment, question: q.question };
+      total += g.score;
+    }
+    const avgScore = Math.round(total / Math.max(1, bank.length));
+    percent = Math.min(100, avgScore);
 
-  const feedbackList = bank.map((q) => {
-    const g = perQuestion[q.id];
-    return `Q: ${q.question} — ${g.score}/100. ${g.comment}`;
-  });
+    criteria.forEach((c, i) => {
+      criteriaScores[c] = Math.min(100, percent + (i === 0 ? 5 : i === 1 ? 0 : -5));
+    });
 
-  const percent = Math.min(100, avgScore);
+    feedbackList = bank.map((q) => {
+      const g = perQuestion[q.id];
+      return `Q: ${q.question} — ${g.score}/100. ${g.comment}`;
+    });
+
+    weakAreas = bank.filter((q) => (perQuestion[q.id]?.score ?? 0) < 50).map((q) => q.question.slice(0, 80));
+  }
+
   await prisma.mockInterview.create({
     data: {
       studentId: profile.id,
@@ -173,12 +246,58 @@ export async function submitAiInterviewAction(
       criteriaScores: JSON.stringify(criteriaScores),
       transcript: JSON.stringify(perQuestion),
       feedback: JSON.stringify(feedbackList),
-      weakAreas: JSON.stringify(
-        bank.filter((q) => (perQuestion[q.id]?.score ?? 0) < 50).map((q) => q.question.slice(0, 80))
-      ),
+      weakAreas: JSON.stringify(weakAreas),
     },
   });
   await snapshotReadiness(prisma, profile.id);
   revalidatePath("/app/interviews");
   return { ok: true, score: percent, perQuestion };
+}
+
+export async function generateAiInterviewQuestionsAction(
+  type: AiType,
+  role: string
+): Promise<{ ok: true; questions: Array<{ id: string; question: string; idealKeywords: string[]; maxScore: number }> } | { error: string }> {
+  const { profile } = await requireStudentProfile();
+
+  if (!process.env.GEMINI_API_KEY) {
+    const bank = AI_QUESTION_BANK[type] ?? AI_QUESTION_BANK.TECHNICAL;
+    return { ok: true, questions: bank };
+  }
+
+  try {
+    const prompt = `You are a professional technical recruiter and mock interviewer for Career OS.
+Generate 5 unique mock interview questions of type "${type}" for a candidate targeting the role "${role || profile.targetRole || "Software Developer"}".
+
+Ensure the questions are highly relevant, specific, and typical of what recruiters ask.
+For each question:
+1. Provide a clear question text.
+2. Provide a list of 5-8 ideal keywords or key conceptual phrases (e.g. "Big-O", "STAR format", "time management") that a strong candidate would use in their answer.
+3. Set the maxScore to 20.
+
+Return the questions list matching the schema.`;
+
+    const { object } = await generateObject({
+      model: getModel(),
+      schema: z.object({
+        questions: z.array(
+          z.object({
+            id: z.string(),
+            question: z.string(),
+            idealKeywords: z.array(z.string()),
+            maxScore: z.number().default(20),
+          })
+        ).length(5),
+      }),
+      schemaName: "interview_questions",
+      schemaDescription: "Dynamically generated mock interview questions",
+      prompt,
+    });
+
+    return { ok: true, questions: object.questions };
+  } catch (e) {
+    console.error("[interviews] AI question generation failed, using fallback bank", e);
+    const bank = AI_QUESTION_BANK[type] ?? AI_QUESTION_BANK.TECHNICAL;
+    return { ok: true, questions: bank };
+  }
 }

@@ -523,6 +523,9 @@ export const OPPORTUNITY_PLATFORMS = [
 export const INTERVIEW_TYPES = ["TECHNICAL", "HR", "BEHAVIORAL"] as const;
 export type InterviewType = (typeof INTERVIEW_TYPES)[number];
 
+export const APPLICATION_STATUSES = ["SAVED", "APPLIED", "INTERVIEW", "OFFER", "REJECTED", "COMPLETED"] as const;
+export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
+
 export function formatInterviewType(type: string): string {
   const map: Record<string, string> = {
     TECHNICAL: "Technical",

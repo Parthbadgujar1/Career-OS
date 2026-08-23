@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 export const dynamic = "force-dynamic";
 
 export default async function ReviewsPage() {
-  const { profile } = await requireStudentProfile();
+  const { user, profile } = await requireStudentProfile();
 
   const [resumes, profileReviews] = await Promise.all([
     prisma.resume.findMany({
@@ -33,9 +33,9 @@ export default async function ReviewsPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="lg:col-span-2">
-          <ResumeBuilderForm defaultRole={profile.targetRole ?? ""} />
+          <ResumeBuilderForm defaultRole={profile.targetRole ?? ""} studentName={user.name || ""} />
         </div>
-        <ResumeReviewForm defaultRole={profile.targetRole ?? ""} />
+        <ResumeReviewForm defaultRole={profile.targetRole ?? ""} studentName={user.name || ""} />
         <ProfileReviewForm />
       </div>
 

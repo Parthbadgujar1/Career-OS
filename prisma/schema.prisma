@@ -28,6 +28,11 @@ model StudentProfile {
   userId            String   @unique
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Registration data
+  mobile            String?
+  college           String?
+  city              String?
+
   // Onboarding data
   degree            String? // B.Tech, B.Sc, BCA, BBA, MBA, MCA, M.Tech, M.Sc ...
   specialization    String?
@@ -43,6 +48,7 @@ model StudentProfile {
   readinessScore    Int      @default(0)
   githubUrl         String?
   linkedinUrl       String?
+  preferences       String   @default("{}") // JSON of notification/privacy toggles
   currentStreak     Int      @default(0)
   bestStreak        Int      @default(0)
   lastActiveDate    DateTime?
@@ -344,6 +350,7 @@ model Event {
   description String?
   startsAt    DateTime
   endsAt      DateTime?
+  location    String?
   url         String?
   createdAt   DateTime @default(now())
 

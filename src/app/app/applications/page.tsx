@@ -11,7 +11,7 @@ export default async function ApplicationsPage() {
   const { profile } = await requireStudentProfile();
 
   const actions = await prisma.opportunityAction.findMany({
-    where: { studentId: profile.id, action: { in: ["SAVED", "APPLIED", "COMPLETED"] } },
+    where: { studentId: profile.id, action: { in: ["SAVED", "APPLIED", "INTERVIEW", "OFFER", "REJECTED", "COMPLETED"] } },
     include: { opportunity: true },
     orderBy: { createdAt: "desc" },
   });

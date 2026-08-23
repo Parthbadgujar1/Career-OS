@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AI_QUESTION_BANK } from "@/lib/interview-data";
-import { submitAiInterviewAction } from "@/server/actions/interviews";
+import { submitAiInterviewAction, generateAiInterviewQuestionsAction } from "@/server/actions/interviews";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,15 +23,36 @@ export function AiInterview({ defaultRole }: { defaultRole: string }) {
   const [type, setType] = useState<AiType>("TECHNICAL");
   const [role, setRole] = useState(defaultRole);
   const [started, setStarted] = useState(false);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [questions, setQuestions] = useState<Array<{ id: string; question: string; idealKeywords: string[]; maxScore: number }>>([]);
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ score: number; perQuestion: Record<string, { score: number; comment: string; question: string }> } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const bank = AI_QUESTION_BANK[type];
-  const q = bank[current];
+  const q = questions[current];
   const answer = answers[q?.id] ?? "";
+
+  const startInterview = async () => {
+    setLoadingQuestions(true);
+    setError(null);
+    try {
+      const res = await generateAiInterviewQuestionsAction(type, role);
+      if ("error" in res) {
+        setError(res.error);
+      } else {
+        setQuestions(res.questions);
+        setStarted(true);
+        setCurrent(0);
+        setAnswers({});
+      }
+    } catch {
+      setError("Failed to generate AI questions. Please try again.");
+    } finally {
+      setLoadingQuestions(false);
+    }
+  };
 
   const submit = async () => {
     setSubmitting(true);
@@ -41,6 +61,7 @@ export function AiInterview({ defaultRole }: { defaultRole: string }) {
     fd.set("type", type);
     fd.set("role", role);
     fd.set("answers", JSON.stringify(answers));
+    fd.set("questions", JSON.stringify(questions));
     const res = await submitAiInterviewAction(fd);
     if ("ok" in res) {
       setResult({ score: res.score, perQuestion: res.perQuestion });
@@ -74,7 +95,7 @@ export function AiInterview({ defaultRole }: { defaultRole: string }) {
             </div>
           </div>
           <div className="space-y-2">
-            {bank.map((bk) => {
+            {questions.map((bk) => {
               const g = result.perQuestion[bk.id];
               if (!g) return null;
               return (
@@ -88,7 +109,7 @@ export function AiInterview({ defaultRole }: { defaultRole: string }) {
               );
             })}
           </div>
-          <Button variant="outline" onClick={() => { setResult(null); setStarted(false); setAnswers({}); setCurrent(0); }}>
+          <Button variant="outline" onClick={() => { setResult(null); setStarted(false); setAnswers({}); setCurrent(0); setQuestions([]); }}>
             Take another AI interview
           </Button>
         </CardContent>
@@ -109,6 +130,7 @@ export function AiInterview({ defaultRole }: { defaultRole: string }) {
           </p>
         </CardHeader>
         <CardContent className="space-y-5">
+          {error && <p className="text-sm font-medium text-rose-600 bg-rose-50 px-3 py-2 rounded-lg">{error}</p>}
           <div>
             <p className="mb-2 text-sm font-semibold">Interview type</p>
             <div className="grid gap-2 sm:grid-cols-3">
@@ -140,30 +162,39 @@ export function AiInterview({ defaultRole }: { defaultRole: string }) {
               placeholder="e.g. Software Developer"
             />
           </div>
-          <Button variant="gradient" onClick={() => setStarted(true)}>
-            <Sparkles className="h-4 w-4" />
-            Start AI interview
+          <Button variant="gradient" onClick={startInterview} disabled={loadingQuestions}>
+            {loadingQuestions ? (
+              <>
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                Generating AI questions...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" />
+                Start AI interview
+              </>
+            )}
           </Button>
         </CardContent>
       </Card>
     );
   }
 
-  const done = Object.keys(answers).length >= bank.length;
+  const done = Object.keys(answers).length >= questions.length;
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">
-            Question {current + 1} of {bank.length}
+            Question {current + 1} of {questions.length}
           </CardTitle>
           <Badge variant="secondary">{TYPE_META[type].label} · {role || "role"}</Badge>
         </div>
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Answer in full sentences with examples</p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-base font-medium">{q.question}</p>
+        <p className="text-base font-medium">{q?.question}</p>
         <Textarea
           rows={5}
           value={answer}
@@ -175,9 +206,9 @@ export function AiInterview({ defaultRole }: { defaultRole: string }) {
           <Button variant="outline" onClick={() => setCurrent((c) => Math.max(0, c - 1))} disabled={current === 0}>
             <ArrowLeft className="h-4 w-4" /> Prev
           </Button>
-          <span className="text-xs text-slate-400">{Object.keys(answers).length} of {bank.length} answered</span>
-          {current < bank.length - 1 ? (
-            <Button onClick={() => setCurrent((c) => Math.min(bank.length - 1, c + 1))}>
+          <span className="text-xs text-slate-400">{Object.keys(answers).length} of {questions.length} answered</span>
+          {current < questions.length - 1 ? (
+            <Button onClick={() => setCurrent((c) => Math.min(questions.length - 1, c + 1))}>
               Next <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
@@ -187,7 +218,7 @@ export function AiInterview({ defaultRole }: { defaultRole: string }) {
             </Button>
           )}
         </div>
-        {!done && current === bank.length - 1 && (
+        {!done && current === questions.length - 1 && (
           <p className="text-xs text-amber-600">Answer every question before submitting for an accurate score.</p>
         )}
         {error && <p className="text-sm font-medium text-rose-600">{error}</p>}

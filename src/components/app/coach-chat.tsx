@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
-import { Bot, Sparkles, Send, Loader2, Brain, Target, FileText } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { Bot, Sparkles, Send, Loader2, Brain, Target, FileText, ArrowDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,12 +29,27 @@ export function CoachChat({ welcome }: { welcome: string }) {
   ]);
   const [input, setInput] = useState("");
   const [isPending, startTransition] = useTransition();
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const stickToBottom = useRef(true);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const el = viewportRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior });
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    stickToBottom.current = nearBottom;
+    setShowScrollButton(!nearBottom);
+  }, []);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, isPending]);
+    if (stickToBottom.current) scrollToBottom("auto");
+  }, [messages, isPending, scrollToBottom]);
 
   const sendMessage = async (raw?: string) => {
     const userMsg = (raw ?? input).trim();
@@ -59,9 +74,9 @@ export function CoachChat({ welcome }: { welcome: string }) {
             <span className="ml-auto px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700">Online</span>
           </div>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col min-h-0">
-          <ScrollArea className="flex-1 pr-2">
-            <div ref={scrollRef} className="space-y-4 pb-4">
+        <CardContent className="flex-1 flex flex-col min-h-0 relative">
+          <ScrollArea className="flex-1 pr-2" viewportRef={viewportRef} onViewportScroll={handleScroll}>
+            <div className="space-y-4 pb-4">
               {messages.map((msg) => (
                 <div key={msg.id} className={cn("flex gap-3 animate-fade-in-up", msg.role === "user" && "flex-row-reverse")}>
                   <div
@@ -97,6 +112,20 @@ export function CoachChat({ welcome }: { welcome: string }) {
               )}
             </div>
           </ScrollArea>
+          {showScrollButton && (
+            <button
+              type="button"
+              onClick={() => {
+                stickToBottom.current = true;
+                setShowScrollButton(false);
+                scrollToBottom("smooth");
+              }}
+              className="absolute bottom-4 right-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-lg shadow-slate-900/10 hover:text-indigo-600 hover:border-indigo-300 transition-all animate-scale-in"
+              aria-label="Scroll to latest message"
+            >
+              <ArrowDown className="h-4 w-4" />
+            </button>
+          )}
           <div className="border-t border-slate-100 pt-4">
             <div className="flex flex-wrap gap-2 mb-3">
               {SUGGESTED_PROMPTS.slice(0, 3).map((prompt) => (

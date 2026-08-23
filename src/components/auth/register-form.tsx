@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { registerAction } from "@/server/actions/auth";
@@ -11,6 +11,7 @@ import { Input, Label, Select } from "@/components/ui/input";
 export default function RegisterForm() {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(registerAction, null);
+  const [role, setRole] = useState("STUDENT");
 
   useEffect(() => {
     if (state && "success" in state && state.success && "redirectTo" in state) {
@@ -41,9 +42,32 @@ export default function RegisterForm() {
             <Label htmlFor="password">Password</Label>
             <Input id="password" name="password" type="password" required minLength={6} />
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="mobile">Mobile number</Label>
+              <Input
+                id="mobile"
+                name="mobile"
+                type="tel"
+                required={role === "STUDENT"}
+                inputMode="tel"
+                pattern="[0-9+\-\s]{10,15}"
+                title="Enter a valid mobile number (10–15 digits)"
+                placeholder="9876543210"
+              />
+            </div>
+            <div>
+              <Label htmlFor="city">City</Label>
+              <Input id="city" name="city" required={role === "STUDENT"} placeholder="e.g. Hyderabad" />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="college">College name</Label>
+            <Input id="college" name="college" required={role === "STUDENT"} placeholder="Your college / university" />
+          </div>
           <div>
             <Label htmlFor="role">I am a</Label>
-            <Select id="role" name="role" defaultValue="STUDENT">
+            <Select id="role" name="role" defaultValue="STUDENT" onChange={(e) => setRole(e.target.value)}>
               <option value="STUDENT">Student</option>
               <option value="MENTOR">Mentor</option>
             </Select>

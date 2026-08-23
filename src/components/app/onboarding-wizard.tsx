@@ -11,27 +11,18 @@ import {
   interestsForRole,
   interestsForSpecialization,
   recommendedInterests,
-  visibleSkillCategories,
-  SKILL_CATEGORY_LABELS,
 } from "@/lib/constants";
-import { saveOnboardingAction } from "@/server/actions/onboarding";
+import { saveOnboardingAction, cancelPathChangeAction } from "@/server/actions/onboarding";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-
-interface WizardSkill {
-  id: string;
-  name: string;
-  category: string;
-}
+import { ArrowLeft } from "lucide-react";
 
 export function OnboardingWizard({
-  skills,
   existing,
-  existingRatings,
+  showBack = false,
 }: {
-  skills: WizardSkill[];
   existing: {
     degree: string;
     specialization: string;
@@ -42,7 +33,7 @@ export function OnboardingWizard({
     interests?: string;
     industries?: string;
   };
-  existingRatings: Record<string, number>;
+  showBack?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(saveOnboardingAction, null);
 
@@ -68,7 +59,6 @@ export function OnboardingWizard({
 
   const [interests, setInterests] = useState<string[]>(initialInterests);
   const [industries, setIndustries] = useState<string[]>(initialIndustries);
-  const [ratings, setRatings] = useState<Record<string, number>>(existingRatings);
   const [degree, setDegree] = useState<string>(existing.degree || "");
   const [specialization, setSpecialization] = useState<string>(existing.specialization || "");
   const [roles, setRoles] = useState<string[]>(initialRoles);
@@ -81,17 +71,6 @@ export function OnboardingWizard({
     () => [...suggestedInterests, ...INTERESTS.filter((i) => !suggestedInterests.includes(i))],
     [suggestedInterests]
   );
-  const visibleCategories = useMemo(() => visibleSkillCategories(degree, specialization, roles), [degree, specialization, roles]);
-
-  const grouped = useMemo(() => {
-    const map = new Map<string, WizardSkill[]>();
-    for (const s of skills) {
-      if (!visibleCategories.includes(s.category)) continue;
-      if (!map.has(s.category)) map.set(s.category, []);
-      map.get(s.category)!.push(s);
-    }
-    return Array.from(map.entries());
-  }, [skills, visibleCategories]);
 
   const changeDegree = (next: string) => {
     setDegree(next);
@@ -131,22 +110,24 @@ export function OnboardingWizard({
     else set([...list, value]);
   };
 
-  const visibleSkillIds = useMemo(() => {
-    const set = new Set<string>();
-    for (const [, list] of grouped) for (const s of list) set.add(s.id);
-    return set;
-  }, [grouped]);
-
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-xl">Step 1 — Tell us about you</CardTitle>
         <CardDescription>
-          Day 1 onboarding: degree, career goal and current skills. We use this to build your
-          personalized roadmap.
+          Day 1 onboarding: degree and career goal. Next, a short test grades your skills (1–5)
+          from real performance — no self-rating — and builds your personalized roadmap.
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {showBack && (
+          <form action={cancelPathChangeAction} className="mb-5">
+            <Button type="submit" variant="outline" size="sm" className="text-slate-500 hover:text-slate-700">
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back to dashboard
+            </Button>
+          </form>
+        )}
         <form action={formAction} className="space-y-6">
           {state?.error && (
             <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{state.error}</p>
@@ -304,76 +285,18 @@ export function OnboardingWizard({
             </div>
           </div>
 
-          <div>
-            <Label>Current skill level (rate 1–5, skip what you don&apos;t know)</Label>
-            {!degree ? (
-              <p className="text-sm text-slate-400">Select a degree first to see relevant skills.</p>
-            ) : (
-              <>
-                <p className="mb-3 text-xs text-slate-400">
-                  Skills adjust to your degree, specialization and roles — re-pick roles to see the list change.
-                </p>
-                <div className="space-y-4">
-                  {grouped.length === 0 && (
-                    <p className="text-sm text-slate-400">No skills available for this degree.</p>
-                  )}
-                  {grouped.map(([category, list]) => (
-                    <div key={category} className="rounded-xl border border-slate-200 bg-white p-4">
-                      <p className="mb-3 text-xs font-bold uppercase tracking-wider text-indigo-500">
-                        {SKILL_CATEGORY_LABELS[category] ?? category}
-                      </p>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {list.map((s) => {
-                          const r = ratings[s.id] ?? 0;
-                          return (
-                            <div
-                              key={s.id}
-                              className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2"
-                            >
-                              <span className="min-w-[100px] text-sm font-medium text-slate-700">{s.name}</span>
-                              <div className="flex items-center gap-1">
-                                {[1, 2, 3, 4, 5].map((n) => (
-                                  <button
-                                    key={n}
-                                    type="button"
-                                    onClick={() => setRatings((prev) => ({ ...prev, [s.id]: n }))}
-                                    className={cn(
-                                      "h-7 w-7 rounded-md text-xs font-semibold transition-colors",
-                                      r === n
-                                        ? "bg-indigo-600 text-white shadow-sm"
-                                        : r === 0
-                                          ? "text-slate-300 hover:bg-slate-100"
-                                          : "bg-slate-200 text-slate-600 hover:bg-slate-300"
-                                    )}
-                                  >
-                                    {n}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+          <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-5 py-4">
+            <p className="text-sm font-semibold text-indigo-700">Next up: your skill grading test</p>
+            <p className="mt-1 text-sm text-slate-600">
+              No need to rate yourself. After this step you&apos;ll take a short baseline test — we grade
+              every skill (1–5) from how you actually perform and build your roadmap around the results.
+            </p>
           </div>
 
           <input type="hidden" name="interests" value={JSON.stringify(interests)} />
           <input type="hidden" name="industries" value={JSON.stringify(industries)} />
           <input type="hidden" name="targetRoles" value={JSON.stringify(roles)} />
           <input type="hidden" name="targetRole" value={roles[0] ?? ""} />
-          <input
-            type="hidden"
-            name="skills"
-            value={JSON.stringify(
-              Object.entries(ratings)
-                .filter(([skillId]) => visibleSkillIds.has(skillId))
-                .map(([skillId, rating]) => ({ skillId, rating }))
-            )}
-          />
 
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 px-5 py-4">
             <span className="text-sm text-indigo-700">After saving, we generate your personalized roadmap.</span>

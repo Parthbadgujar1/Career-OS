@@ -9,6 +9,7 @@ const resumeReviewSchema = z.object({
   missingSkills: z.array(z.string()),
   suggestions: z.array(z.string()),
   impactStatements: z.array(z.string()),
+  extractedText: z.string().describe("Clean plain text representation of the resume content, formatted neatly."),
 });
 
 const profileReviewSchema = z.object({
@@ -32,30 +33,55 @@ const projectRecommendationsSchema = z.object({
 export interface ResumeReviewInput {
   role: string;
   skills: string[];
-  resumeText: string;
+  resumeText?: string;
+  resumePdfBase64?: string;
   projects: string[];
 }
 
 export async function reviewResume(input: ResumeReviewInput) {
+  const contentParts: Array<{ type: "text"; text: string } | { type: "file"; data: string; mimeType: string }> = [
+    {
+      type: "text",
+      text: `You are an ATS resume reviewer and career coach. Review the resume below for a "${input.role}" role.
+
+TARGET ROLE: ${input.role}
+STUDENT'S SKILLS: ${input.skills.join(", ") || "not provided"}
+PROJECTS: ${input.projects.join(", ") || "none listed"}
+
+Score it for ATS-friendliness and impact (0-100) and perform formatting analysis. Return:
+- atsScore: 0-100
+- summary: 2-3 sentence overall assessment
+- missingSkills: up to 6 skills that should be added for the target role
+- suggestions: up to 8 specific, actionable resume fixes (structure, keywords, impact statements, sections)
+- impactStatements: up to 4 example rewritten bullet points that quantify achievements
+- extractedText: The neat, clean plain text content of the entire resume.`,
+    }
+  ];
+
+  if (input.resumePdfBase64) {
+    contentParts.push({
+      type: "file",
+      data: input.resumePdfBase64,
+      mimeType: "application/pdf",
+    });
+  } else {
+    contentParts.push({
+      type: "text",
+      text: `RESUME CONTENT:\n"""${input.resumeText || "(empty resume)"}"""`,
+    });
+  }
+
   const { object } = await generateObject({
     model: getModel(),
     schema: resumeReviewSchema,
     schemaName: "resume_review",
     schemaDescription: "ATS-oriented resume review",
-    prompt: `You are an ATS resume reviewer. Review the resume below for a "${input.role}" role.
-
-TARGET ROLE: ${input.role}
-STUDENT'S SKILLS: ${input.skills.join(", ") || "not provided"}
-PROJECTS: ${input.projects.join(", ") || "none listed"}
-RESUME CONTENT:
-"""${input.resumeText || "(empty resume)"}"""
-
-Score it for ATS-friendliness and impact (0-100). Return:
-- atsScore: 0-100
-- summary: 2-3 sentence overall assessment
-- missingSkills: up to 6 skills that should be added for the target role
-- suggestions: up to 8 specific, actionable resume fixes (structure, keywords, impact statements, sections)
-- impactStatements: up to 4 example rewritten bullet points that quantify achievements`,
+    messages: [
+      {
+        role: "user",
+        content: contentParts as unknown as string,
+      },
+    ],
   });
 
   return object;

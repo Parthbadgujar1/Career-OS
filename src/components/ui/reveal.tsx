@@ -18,13 +18,11 @@ export function Reveal({
 }) {
   const Comp = as as ElementType;
   const ref = useRef<HTMLElement>(null);
-  const [visible, setVisible] = useState(
-    () => typeof window === "undefined" || typeof IntersectionObserver === "undefined"
-  );
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
+    if (!el) return;
     const obs = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {

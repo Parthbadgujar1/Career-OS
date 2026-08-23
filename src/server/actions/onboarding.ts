@@ -6,6 +6,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
 import { ASSESSMENT_SETS, getAssessmentSetsForProfile } from "@/lib/assessment-data";
+import { gradeSkillsFromAssessments } from "@/lib/assessment-grading";
 import { persistRoadmap } from "@/lib/engine/roadmap";
 import { snapshotReadiness } from "@/lib/scoring/readiness";
 import { scheduleNextProgressTest } from "@/lib/engine/tests";
@@ -19,7 +20,6 @@ const onboardingSchema = z.object({
   weeklyHours: z.coerce.number().int().min(1).max(60),
   interests: z.string(), // JSON array
   industries: z.string(), // JSON array
-  skills: z.string(), // JSON of {skillId, rating}[]
 });
 
 export async function saveOnboardingAction(_prev: unknown, formData: FormData) {
@@ -33,7 +33,6 @@ export async function saveOnboardingAction(_prev: unknown, formData: FormData) {
     weeklyHours: formData.get("weeklyHours"),
     interests: formData.get("interests"),
     industries: formData.get("industries"),
-    skills: formData.get("skills"),
   });
 
   if (!parsed.success) {
@@ -43,20 +42,9 @@ export async function saveOnboardingAction(_prev: unknown, formData: FormData) {
   const data = parsed.data;
   const interests = fromJson<string[]>(data.interests, []);
   const industries = fromJson<string[]>(data.industries, []);
-  const skills = fromJson<{ skillId: string; rating: number }[]>(data.skills, []);
   const targetRoles = fromJson<string[]>(data.targetRoles, []);
   if (targetRoles.length === 0) {
     return { error: "Select at least one target role" };
-  }
-
-  // Store skills
-  for (const s of skills) {
-    if (!s.skillId) continue;
-    await prisma.studentSkill.upsert({
-      where: { studentId_skillId: { studentId: profile.id, skillId: s.skillId } },
-      update: { selfRating: s.rating },
-      create: { studentId: profile.id, skillId: s.skillId, selfRating: s.rating },
-    });
   }
 
   await prisma.studentProfile.update({
@@ -74,12 +62,17 @@ export async function saveOnboardingAction(_prev: unknown, formData: FormData) {
     },
   });
 
-  // Generate the personalized roadmap right after onboarding
-  const skillRows = await prisma.studentSkill.findMany({
-    where: { studentId: profile.id },
-    include: { skill: true },
+  // Skills are graded by the baseline test, not self-rated. Clear previous
+  // ratings and assessments so grading always reflects the current path.
+  await prisma.studentSkill.deleteMany({ where: { studentId: profile.id } });
+  await prisma.assessment.deleteMany({ where: { studentId: profile.id } });
+  await prisma.studentProfile.update({
+    where: { id: profile.id },
+    data: { assessmentComplete: false },
   });
-  const weakSkills = skillRows.filter((s) => s.selfRating <= 2).map((s) => s.skill.name);
+
+  // Starter roadmap from profile alone — replaced with a graded-skill version
+  // once the baseline test is complete.
   await persistRoadmap(
     prisma,
     profile.id,
@@ -90,8 +83,8 @@ export async function saveOnboardingAction(_prev: unknown, formData: FormData) {
       targetRole: targetRoles[0],
       interests,
       weeklyHours: data.weeklyHours,
-      skills: skillRows.map((s) => ({ name: s.skill.name, rating: s.selfRating })),
-      weakSkills,
+      skills: [],
+      weakSkills: [],
     },
     12,
     true
@@ -103,7 +96,7 @@ export async function saveOnboardingAction(_prev: unknown, formData: FormData) {
 
 export async function submitAssessmentAction(
   formData: FormData
-): Promise<{ ok: true; score: number; maxScore: number; type: string } | { error: string }> {
+): Promise<{ ok: true; score: number; maxScore: number; type: string; graded?: boolean } | { error: string }> {
   const { profile } = await requireStudentProfile();
 
   const setType = (formData.get("setType") as string) || "TECHNICAL";
@@ -129,21 +122,48 @@ export async function submitAssessmentAction(
     },
   });
 
+  // Grade skills 1-5 directly from test performance (all tests taken so far)
+  await gradeSkillsFromAssessments(prisma, profile.id);
+
   // Check if all assessments for this student's profile are now complete
   const requiredSets = getAssessmentSetsForProfile(profile.degree);
   const taken = await prisma.assessment.findMany({ where: { studentId: profile.id } });
   const takenTypes = new Set(taken.map((a) => a.type));
   const allComplete = requiredSets.every((s) => takenTypes.has(s.type));
+  let graded = false;
   if (allComplete) {
     await prisma.studentProfile.update({
       where: { id: profile.id },
       data: { assessmentComplete: true },
     });
+    // Rebuild the roadmap from the graded skills and lock in readiness
+    const skillRows = await prisma.studentSkill.findMany({
+      where: { studentId: profile.id },
+      include: { skill: true },
+    });
+    await persistRoadmap(
+      prisma,
+      profile.id,
+      {
+        degree: profile.degree ?? "",
+        specialization: profile.specialization ?? "",
+        year: profile.year ?? "",
+        targetRole: profile.targetRole ?? "",
+        interests: fromJson<string[]>(profile.interests, []),
+        weeklyHours: profile.weeklyHours,
+        skills: skillRows.map((s) => ({ name: s.skill.name, rating: s.selfRating })),
+        weakSkills: skillRows.filter((s) => s.selfRating <= 2).map((s) => s.skill.name),
+      },
+      12,
+      true
+    );
+    await scheduleNextProgressTest(prisma, profile.id);
     await snapshotReadiness(prisma, profile.id);
+    graded = true;
   }
 
   revalidatePath("/app/assessment");
-  return { ok: true, score, maxScore: set.questions.length, type: setType };
+  return { ok: true, score, maxScore: set.questions.length, type: setType, graded };
 }
 
 export async function generateRoadmapAction(formData: FormData) {
@@ -175,24 +195,28 @@ export async function generateRoadmapAction(formData: FormData) {
 
 export async function changePathAction() {
   const { profile } = await requireStudentProfile();
+  // Soft reset: the old roadmap and profile stay visible until the student
+  // saves the wizard (which clears ratings/assessments and regenerates).
   await prisma.studentProfile.update({
     where: { id: profile.id },
     data: {
       onboardedAt: null,
       assessmentComplete: false,
-      degree: { set: null },
-      specialization: { set: null },
-      targetRole: { set: null },
-      targetRoles: { set: "[]" },
     },
-  });
-  // Delete old roadmap so a fresh one is generated on re-onboarding
-  await prisma.roadmap.deleteMany({ where: { studentId: profile.id } });
-  // Unlink tasks that referenced the now-deleted roadmap items
-  await prisma.task.updateMany({
-    where: { studentId: profile.id, roadmapItemId: { not: null } },
-    data: { roadmapItemId: null },
   });
   revalidatePath("/app");
   redirect("/app/assessment?step=onboard");
+}
+
+export async function cancelPathChangeAction() {
+  const { profile } = await requireStudentProfile();
+  // Restore onboarded status — old degree/role/roadmap were never removed,
+  // so the dashboard is fully usable again.
+  await prisma.studentProfile.update({
+    where: { id: profile.id },
+    data: { onboardedAt: new Date() },
+  });
+  revalidatePath("/app");
+  revalidatePath("/app/assessment");
+  redirect("/app");
 }

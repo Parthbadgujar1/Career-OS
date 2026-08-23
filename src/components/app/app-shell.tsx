@@ -83,7 +83,7 @@ const NAV_GROUPS = [
 const BOTTOM_ACTIONS = [
   { href: "/app/coach", label: "AI Career Coach", icon: Bot, primary: true },
   { href: "/app/settings", label: "Settings", icon: Settings },
-  { href: "/help", label: "Help", icon: HelpCircle },
+  { href: "/app/help", label: "Help", icon: HelpCircle },
 ];
 
 export function AppShell({

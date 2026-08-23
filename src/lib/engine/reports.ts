@@ -2,7 +2,7 @@ import "server-only";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { generateWeeklyReport as generateWeeklyReportNarrative } from "@/lib/ai/weekly";
 import { snapshotReadiness } from "@/lib/scoring/readiness";
-import { addDays, startOfWeek } from "@/lib/utils";
+import { addDays, startOfWeek, fromJson } from "@/lib/utils";
 
 /**
  * Weekly Review loop (Section 5.6): analyze the week, generate the report,
@@ -107,14 +107,17 @@ export async function generateWeeklyReport(prisma: PrismaClient, studentId: stri
 
   const readiness = await snapshotReadiness(prisma, studentId);
 
-  await prisma.notification.create({
-    data: {
-      studentId,
-      type: "REPORT",
-      title: `Your weekly report is ready (${weekLabel})`,
-      body: `${completionRate}% completion · Readiness ${readiness.total}/100`,
-    },
-  });
+  const prefs = fromJson<Record<string, boolean>>(profile.preferences, {});
+  if (prefs.weeklyReport !== false) {
+    await prisma.notification.create({
+      data: {
+        studentId,
+        type: "REPORT",
+        title: `Your weekly report is ready (${weekLabel})`,
+        body: `${completionRate}% completion · Readiness ${readiness.total}/100`,
+      },
+    });
+  }
 
   return { report, readiness, weekLabel };
 }
