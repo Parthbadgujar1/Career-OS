@@ -10,11 +10,9 @@ import {
   Brain,
   FolderGit2,
   FileText,
-  Code2,
   ClipboardCheck,
   FileQuestion,
   Mic2,
-  Briefcase,
   Calendar,
   FolderOpen,
   BarChart3,
@@ -31,6 +29,8 @@ import {
   ChevronRight,
   Bell,
   Timer,
+  FileCheck,
+  Lightbulb,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +39,7 @@ const NAV_GROUPS = [
     group: "HOME",
     items: [
       { href: "/app", label: "Overview", icon: LayoutDashboard, exact: true },
-      { href: "/app/tasks", label: "Today's Plan", icon: CalendarClock },
+      { href: "/app/tasks", label: "Weekly Plan", icon: CalendarClock },
       { href: "/app/notifications", label: "Notifications", icon: Bell },
     ],
   },
@@ -55,8 +55,7 @@ const NAV_GROUPS = [
   {
     group: "PRACTICE",
     items: [
-      { href: "/app/coding", label: "Coding", icon: Code2 },
-      { href: "/app/assessment", label: "Assessments", icon: ClipboardCheck },
+      { href: "/app/assessment", label: "Skill Assessment", icon: ClipboardCheck },
       { href: "/app/quizzes", label: "Quizzes", icon: FileQuestion },
       { href: "/app/progress-test", label: "Progress Tests", icon: Timer },
       { href: "/app/interviews", label: "Mock Interviews", icon: Mic2 },
@@ -65,9 +64,10 @@ const NAV_GROUPS = [
   {
     group: "OPPORTUNITIES",
     items: [
-      { href: "/app/opportunities", label: "Jobs & Internships", icon: Briefcase },
+      { href: "/app/opportunities", label: "Discover", icon: Lightbulb },
       { href: "/app/events", label: "Events", icon: Calendar },
       { href: "/app/applications", label: "Applications", icon: FolderOpen },
+      { href: "/app/jd-match", label: "JD Match", icon: FileCheck },
     ],
   },
   {
@@ -117,6 +117,12 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen bg-slate-50">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-indigo-600 focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-white"
+      >
+        Skip to main content
+      </a>
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm md:hidden animate-fade-in"
@@ -140,7 +146,8 @@ export function AppShell({
           </div>
           <button
             onClick={() => setMobileOpen(false)}
-            className="ml-auto rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 md:hidden"
+            aria-label="Close sidebar"
+            className="ml-auto rounded-lg p-2.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 md:hidden"
           >
             <X className="h-4 w-4" />
           </button>
@@ -249,7 +256,9 @@ export function AppShell({
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileOpen(true)}
-              className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 md:hidden transition-colors"
+              aria-label="Open navigation menu"
+              aria-expanded={mobileOpen}
+              className="rounded-xl p-2.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 md:hidden transition-colors"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -278,7 +287,7 @@ export function AppShell({
             </div>
           </div>
         </header>
-        <main className="flex-1 px-4 sm:px-6 py-6">{children}</main>
+        <main id="main-content" className="flex-1 px-4 sm:px-6 py-6">{children}</main>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import "server-only";
 import { generateObject } from "ai";
 import { z } from "zod";
-import { getModel } from "@/lib/ai/client";
+import { generateWithFailover } from "@/lib/ai/client";
 
 const codingFeedbackSchema = z.object({
   correctness: z.string(),
@@ -19,8 +19,6 @@ export interface CodingFeedbackInput {
 }
 
 export async function evaluateCodeSolution(input: CodingFeedbackInput) {
-  const model = getModel();
-
   const prompt = `You are a Senior Software Engineer reviewing a student's solution to a coding problem.
 
 PROBLEM TITLE: ${input.title}
@@ -40,13 +38,16 @@ Evaluate the student's solution and return:
 
 Keep your explanations concise, encouraging, and clear.`;
 
-  const { object } = await generateObject({
-    model,
-    schema: codingFeedbackSchema,
-    schemaName: "coding_feedback",
-    schemaDescription: "AI feedback on a coding solution",
-    prompt,
-  });
+  const { object } = await generateWithFailover(
+    (model) => generateObject({
+      model,
+      schema: codingFeedbackSchema,
+      schemaName: "coding_feedback",
+      schemaDescription: "AI feedback on a coding solution",
+      prompt,
+    }),
+    "CODING_FEEDBACK",
+  );
 
   return object;
 }

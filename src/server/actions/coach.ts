@@ -3,8 +3,8 @@
 import { generateText } from "ai";
 import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
-import { ensureDailyTasks } from "@/lib/engine/tasks";
-import { getModel } from "@/lib/ai/client";
+import { ensureWeeklyTasks } from "@/lib/engine/tasks";
+import { generateWithFailover } from "@/lib/ai/client";
 
 interface CoachContext {
   name: string;
@@ -29,7 +29,7 @@ async function buildContext(studentId: string): Promise<CoachContext> {
     where: { studentId },
     include: { skill: true },
   });
-  const tasks = await ensureDailyTasks(prisma, studentId);
+  const tasks = await ensureWeeklyTasks(prisma, studentId);
   const latestReport = await prisma.weeklyReport.findFirst({
     where: { studentId },
     orderBy: { weekEnd: "desc" },
@@ -109,10 +109,10 @@ export async function coachChatAction(message: string): Promise<{ response: stri
   const { profile } = await requireStudentProfile();
   const ctx = await buildContext(profile.id);
 
-  if (process.env.GEMINI_API_KEY) {
-    try {
-      const { text } = await generateText({
-        model: getModel(),
+  try {
+    const { text } = await generateWithFailover(
+      (model) => generateText({
+        model,
         prompt: `You are Career OS's AI career coach for a ${ctx.targetRole} student.
 Real student context (use this, never invent data):
 - Readiness: ${ctx.readiness}/100
@@ -126,11 +126,12 @@ Real student context (use this, never invent data):
 Student message: "${message}"
 
 Reply as a concise, motivating coach (max ~120 words). If the student asks something about their data, answer using the context above. End with one concrete next action.`,
-      });
-      if (text.trim()) return { response: text.trim() };
-    } catch (e) {
-      console.error("[coach] AI chat failed", e);
-    }
+      }),
+      "COACH_CHAT",
+    );
+    if (text.trim()) return { response: text.trim() };
+  } catch (e) {
+    console.error("[coach] AI chat failed", e);
   }
 
   return { response: keywordResponse(ctx, message) };

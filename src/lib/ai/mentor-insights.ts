@@ -1,7 +1,7 @@
 import "server-only";
 import { generateObject } from "ai";
 import { z } from "zod";
-import { getModel } from "@/lib/ai/client";
+import { generateWithFailover } from "@/lib/ai/client";
 
 const cohortInsightsSchema = z.object({
   summary: z.string(),
@@ -124,8 +124,6 @@ export async function generateMentorAiInsights(students: CohortStudentData[]) {
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (insightsCache.size > 100) insightsCache.clear();
 
-  const model = getModel();
-
   const cohortDataFormatted = students
     .map((s) => {
       return `- Student: ${s.name}
@@ -152,14 +150,16 @@ Evaluate the cohort data and generate structured insights for the mentor:
 Keep your tone professional, supportive, and data-driven.`;
 
   try {
-    const { object } = await generateObject({
-      model,
-      schema: cohortInsightsSchema,
-      schemaName: "cohort_insights",
-      schemaDescription: "AI insights on student cohort performance",
-      prompt,
-      maxRetries: 0,
-    });
+    const { object } = await generateWithFailover(
+      (model) => generateObject({
+        model,
+        schema: cohortInsightsSchema,
+        schemaName: "cohort_insights",
+        schemaDescription: "AI insights on student cohort performance",
+        prompt,
+      }),
+      "MENTOR_INSIGHTS",
+    );
     insightsCache.set(key, { expiresAt: Date.now() + CACHE_TTL_MS, value: object });
     return object;
   } catch (e) {

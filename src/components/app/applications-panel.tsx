@@ -98,7 +98,7 @@ export function ApplicationsPanel({ applications }: { applications: ApplicationR
                     value={app.status}
                     onChange={(e) => changeStatus(app.id, e.target.value)}
                     disabled={pendingId === app.id}
-                    className="flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:opacity-50"
+                    className="flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm outline-none transition-colors focus:border-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-100 disabled:opacity-50"
                     aria-label={`Update status for ${app.title}`}
                   >
                     {STATUS_ORDER.map((s) => (

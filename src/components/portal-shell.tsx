@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { LogOut, Menu, X, Sparkles, LayoutDashboard, Users, BarChart3, Activity, Briefcase, CalendarDays, Megaphone, Brain, MessageSquare, Mic2, type LucideIcon } from "lucide-react";
+import { LogOut, Menu, X, Sparkles, LayoutDashboard, Users, BarChart3, Activity, Briefcase, CalendarDays, Megaphone, Brain, MessageSquare, Mic2, ClipboardList, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PortalNavItem {
@@ -18,7 +18,7 @@ interface PortalNavGroup {
   items: PortalNavItem[];
 }
 
-const PORTAL_NAV: Record<"admin" | "mentor", PortalNavGroup[]> = {
+const PORTAL_NAV: Record<"admin" | "mentor" | "employer", PortalNavGroup[]> = {
   admin: [
     {
       group: "Overview",
@@ -57,6 +57,21 @@ const PORTAL_NAV: Record<"admin" | "mentor", PortalNavGroup[]> = {
       ],
     },
   ],
+  employer: [
+    {
+      group: "Overview",
+      items: [
+        { href: "/employer", label: "Overview", icon: LayoutDashboard, exact: true },
+      ],
+    },
+    {
+      group: "Management",
+      items: [
+        { href: "/employer/jobs", label: "Posted Jobs", icon: Briefcase },
+        { href: "/employer/applicants", label: "Applicants", icon: ClipboardList },
+      ],
+    },
+  ],
 };
 
 export function PortalShell({
@@ -66,14 +81,14 @@ export function PortalShell({
   signOutAction,
 }: {
   children: React.ReactNode;
-  portal: "admin" | "mentor";
+  portal: "admin" | "mentor" | "employer";
   user: { name: string; email: string; role: string };
   signOutAction: () => Promise<void>;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navGroups = PORTAL_NAV[portal];
-  const title = portal === "admin" ? "Admin Dashboard" : "Mentor Dashboard";
+  const title = portal === "admin" ? "Admin Dashboard" : portal === "employer" ? "Employer Portal" : "Mentor Dashboard";
 
   const isActive = (item: PortalNavItem): boolean => {
     if (item.href.includes("#")) {
@@ -84,6 +99,12 @@ export function PortalShell({
 
   return (
     <div className="flex min-h-screen bg-slate-50">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-indigo-600 focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-white"
+      >
+        Skip to main content
+      </a>
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm md:hidden animate-fade-in"
@@ -107,7 +128,8 @@ export function PortalShell({
           </div>
           <button
             onClick={() => setMobileOpen(false)}
-            className="ml-auto rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 md:hidden"
+            aria-label="Close sidebar"
+            className="ml-auto rounded-lg p-2.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 md:hidden"
           >
             <X className="h-4 w-4" />
           </button>
@@ -169,7 +191,9 @@ export function PortalShell({
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileOpen(true)}
-              className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 md:hidden transition-colors"
+              aria-label="Open navigation menu"
+              aria-expanded={mobileOpen}
+              className="rounded-xl p-2.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 md:hidden transition-colors"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -192,7 +216,7 @@ export function PortalShell({
             </div>
           </div>
         </header>
-        <main className="flex-1 px-4 sm:px-6 py-6">{children}</main>
+        <main id="main-content" className="flex-1 px-4 sm:px-6 py-6">{children}</main>
       </div>
     </div>
   );

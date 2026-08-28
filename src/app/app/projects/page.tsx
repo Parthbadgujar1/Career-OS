@@ -6,6 +6,7 @@ import { fromJson } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AiEnhanceButton } from "@/components/app/project-enhance-button";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ export default async function ProjectsPage() {
         <div>
           <h1 className="text-2xl font-bold">Projects</h1>
           <p className="text-sm text-slate-500">
-            Your portfolio evidence — every completed project raises your readiness score.
+            Your portfolio evidence — every project raises your readiness score.
           </p>
         </div>
         <RecommendButton />
@@ -122,14 +123,20 @@ export default async function ProjectsPage() {
                         ))}
                       </div>
                     )}
+                    {p.evidence && (
+                      <p className="mt-2 text-xs text-slate-400 italic">Resume: {p.evidence}</p>
+                    )}
                   </div>
-                  {p.status !== "COMPLETED" && (
-                    <form action={updateProjectStatusAction.bind(null, p.id, nextStatus(p.status))}>
-                      <Button type="submit" size="sm" variant="outline">
-                        Mark {nextStatus(p.status).replace("_", " ")}
-                      </Button>
-                    </form>
-                  )}
+                  <div className="flex flex-col gap-2 shrink-0">
+                    {p.status !== "COMPLETED" && (
+                      <form action={updateProjectStatusAction.bind(null, p.id, nextStatus(p.status))}>
+                        <Button type="submit" size="sm" variant="outline">
+                          Mark {nextStatus(p.status).replace("_", " ")}
+                        </Button>
+                      </form>
+                    )}
+                    <AiEnhanceButton projectId={p.id} />
+                  </div>
                 </CardContent>
               </Card>
             );

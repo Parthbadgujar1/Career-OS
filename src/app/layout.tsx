@@ -13,9 +13,56 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Student Career OS",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://careeros.in"),
+  title: {
+    default: "Career OS — AI-Powered Career Readiness Platform for Students",
+    template: "%s | Career OS",
+  },
   description:
     "AI-Powered Career Preparation & Placement Readiness Platform. From Day 1 of graduation → skills → projects → profiles → practice → placement.",
+  keywords: [
+    "career readiness platform",
+    "student career OS",
+    "placement preparation",
+    "AI career coach",
+    "skill assessment",
+    "mock interview practice",
+    "coding practice",
+    "resume builder",
+    "internship tracker",
+    "college placement",
+  ],
+  authors: [{ name: "Career OS" }],
+  creator: "Career OS",
+  openGraph: {
+    type: "website",
+    locale: "en_IN",
+    siteName: "Career OS",
+    title: "Career OS — AI-Powered Career Readiness Platform",
+    description:
+      "From Day 1 of graduation to placement. Assess skills, build projects, practice interviews, and track your career journey — all in one platform.",
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Career OS — AI-Powered Career Readiness Platform",
+    description:
+      "From Day 1 of graduation to placement. Assess skills, build projects, practice interviews, and track your career journey.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -45,6 +92,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
 })();`,
           }}
         />
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-indigo-600 focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-white"
+        >
+          Skip to main content
+        </a>
         {children}
       </body>
     </html>

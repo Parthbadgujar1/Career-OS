@@ -117,7 +117,10 @@ export async function recordMockInterviewAction(formData: FormData) {
       role,
       score,
       maxScore,
+      criteriaScores: "{}",
+      skillCoverage: "[]",
       feedback: JSON.stringify([notes]),
+      weakAreas: "[]",
     },
   });
   await snapshotReadiness(prisma, profile.id);

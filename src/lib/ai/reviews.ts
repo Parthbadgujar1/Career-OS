@@ -1,7 +1,7 @@
 import "server-only";
 import { generateObject } from "ai";
 import { z } from "zod";
-import { getModel } from "@/lib/ai/client";
+import { generateWithFailover } from "@/lib/ai/client";
 
 const resumeReviewSchema = z.object({
   atsScore: z.number().int().min(0).max(100),
@@ -10,6 +10,12 @@ const resumeReviewSchema = z.object({
   suggestions: z.array(z.string()),
   impactStatements: z.array(z.string()),
   extractedText: z.string().describe("Clean plain text representation of the resume content, formatted neatly."),
+  sectionAnalysis: z.array(z.object({
+    section: z.string(),
+    status: z.enum(["STRONG", "WEAK", "MISSING"]),
+    note: z.string(),
+  })).describe("Analysis of each resume section"),
+  keywordGaps: z.array(z.string()).describe("Important keywords missing for ATS"),
 });
 
 const profileReviewSchema = z.object({
@@ -17,6 +23,30 @@ const profileReviewSchema = z.object({
   summary: z.string(),
   findings: z.array(z.string()),
   suggestions: z.array(z.string()),
+  sectionAnalysis: z.array(z.object({
+    section: z.string(),
+    status: z.enum(["STRONG", "WEAK", "MISSING"]),
+    note: z.string(),
+  })).describe("Analysis of each profile section"),
+  whatToAdd: z.array(z.object({
+    item: z.string(),
+    priority: z.enum(["HIGH", "MEDIUM", "LOW"]),
+    reason: z.string(),
+  })).describe("Specific things to add to the profile"),
+});
+
+const improvedResumeSchema = z.object({
+  improvedContent: z.string().describe("The full improved resume content in plain text"),
+  changesSummary: z.array(z.string()).describe("List of all changes made"),
+});
+
+const improvedProfileSchema = z.object({
+  headline: z.string().describe("Improved LinkedIn headline"),
+  about: z.string().describe("Improved LinkedIn About/Summary section"),
+  skillsToAdd: z.array(z.string()),
+  projectsSection: z.string().describe("Suggested projects section content"),
+  readmeContent: z.string().describe("Suggested GitHub README content"),
+  changesSummary: z.array(z.string()).describe("List of all changes made"),
 });
 
 const projectRecommendationsSchema = z.object({
@@ -42,19 +72,21 @@ export async function reviewResume(input: ResumeReviewInput) {
   const contentParts: Array<{ type: "text"; text: string } | { type: "file"; data: string; mimeType: string }> = [
     {
       type: "text",
-      text: `You are an ATS resume reviewer and career coach. Review the resume below for a "${input.role}" role.
+      text: `You are an expert ATS resume reviewer and career coach for Indian college students. Review the resume for a "${input.role}" role.
 
 TARGET ROLE: ${input.role}
 STUDENT'S SKILLS: ${input.skills.join(", ") || "not provided"}
 PROJECTS: ${input.projects.join(", ") || "none listed"}
 
-Score it for ATS-friendliness and impact (0-100) and perform formatting analysis. Return:
-- atsScore: 0-100
+Perform a THOROUGH analysis and return:
+- atsScore: 0-100 (be strict — most student resumes score 30-60)
 - summary: 2-3 sentence overall assessment
 - missingSkills: up to 6 skills that should be added for the target role
 - suggestions: up to 8 specific, actionable resume fixes (structure, keywords, impact statements, sections)
 - impactStatements: up to 4 example rewritten bullet points that quantify achievements
-- extractedText: The neat, clean plain text content of the entire resume.`,
+- extractedText: The neat, clean plain text content of the entire resume
+- sectionAnalysis: Analyze each section (Contact, Summary, Education, Skills, Projects, Experience, Certifications) — mark as STRONG, WEAK, or MISSING with a note
+- keywordGaps: Important ATS keywords missing for this specific role`,
     }
   ];
 
@@ -71,18 +103,21 @@ Score it for ATS-friendliness and impact (0-100) and perform formatting analysis
     });
   }
 
-  const { object } = await generateObject({
-    model: getModel(),
-    schema: resumeReviewSchema,
-    schemaName: "resume_review",
-    schemaDescription: "ATS-oriented resume review",
-    messages: [
-      {
-        role: "user",
-        content: contentParts as unknown as string,
-      },
-    ],
-  });
+  const { object } = await generateWithFailover(
+    (model) => generateObject({
+      model,
+      schema: resumeReviewSchema,
+      schemaName: "resume_review",
+      schemaDescription: "ATS-oriented resume review",
+      messages: [
+        {
+          role: "user" as const,
+          content: contentParts as unknown as string,
+        },
+      ],
+    }),
+    "REVIEW_RESUME",
+  );
 
   return object;
 }
@@ -96,12 +131,13 @@ export interface ProfileReviewInput {
 
 export async function reviewProfile(input: ProfileReviewInput) {
   const isLinkedIn = input.platform === "LINKEDIN";
-  const { object } = await generateObject({
-    model: getModel(),
-    schema: profileReviewSchema,
-    schemaName: "profile_review",
-    schemaDescription: `${isLinkedIn ? "LinkedIn" : "GitHub"} profile review`,
-    prompt: `You are a career profile coach. Review this ${isLinkedIn ? "LinkedIn" : "GitHub"} profile for a "${input.role}" candidate.
+  const { object } = await generateWithFailover(
+    (model) => generateObject({
+      model,
+      schema: profileReviewSchema,
+      schemaName: "profile_review",
+      schemaDescription: `${isLinkedIn ? "LinkedIn" : "GitHub"} profile review`,
+      prompt: `You are a career profile coach specializing in ${isLinkedIn ? "LinkedIn" : "GitHub"} optimization for Indian college students targeting "${input.role}" roles.
 
 PROFILE URL: ${input.url || "not provided"}
 PROFILE DETAILS FROM THE STUDENT:
@@ -109,10 +145,16 @@ PROFILE DETAILS FROM THE STUDENT:
 
 Score 0-100 for completeness, positioning and appeal to recruiters. Return:
 - score: 0-100
-- summary: 2-3 sentences
+- summary: 2-3 sentences overall assessment
 - findings: up to 6 strengths and gaps found
-- suggestions: up to 8 specific improvement actions (headline, about, skills, projects, README, activity)`,
-  });
+- suggestions: up to 8 specific improvement actions
+- sectionAnalysis: For ${isLinkedIn ? "each profile section (Headline, About, Experience, Education, Skills, Featured, Activity)" : "each area (Profile README, Repos, Contributions, Documentation, Activity)"}, mark as STRONG, WEAK, or MISSING with a note
+- whatToAdd: Specific items to add with priority (HIGH/MEDIUM/LOW) and reasoning — be very specific (e.g. "Add a project called X that demonstrates Y skill")
+
+Be very specific about WHAT to write, not just "improve your headline" — give them the actual content direction.`,
+    }),
+    "REVIEW_PROFILE",
+  );
 
   return object;
 }
@@ -131,14 +173,15 @@ export async function recommendProjects(input: ProjectRecommendationInput) {
     milestones: string[];
   }> = [];
 
-  if (process.env.GEMINI_API_KEY) {
+  if (projects.length === 0) {
     try {
-      const { object } = await generateObject({
-        model: getModel(),
-        schema: projectRecommendationsSchema,
-        schemaName: "project_recommendations",
-        schemaDescription: "Skill-gap-driven project recommendations",
-        prompt: `You are the Career OS project engine. Recommend 3 portfolio projects for a student targeting "${input.role}".
+      const { object } = await generateWithFailover(
+        (model) => generateObject({
+          model,
+          schema: projectRecommendationsSchema,
+          schemaName: "project_recommendations",
+          schemaDescription: "Skill-gap-driven project recommendations",
+          prompt: `You are the Career OS project engine. Recommend 3 portfolio projects for a student targeting "${input.role}".
 
 CURRENT SKILLS: ${input.skills.join(", ") || "none"}
 WEAK SKILLS TO PRACTICE: ${input.weakSkills.join(", ") || "none"}
@@ -148,7 +191,9 @@ RULES:
 2. Order from simplest to most impressive (beginner → intermediate).
 3. Projects must be buildable solo by a student in 1-3 weeks.
 4. For each project return title, 2-3 sentence description, skillGaps (skills it builds), and milestones (3-5 steps to complete it).`,
-      });
+        }),
+        "REVIEW_PROJECTS",
+      );
       projects = object.projects;
     } catch (e) {
       console.error("[recommendProjects] AI generation failed, using fallback", e);
@@ -293,9 +338,99 @@ RULES:
       ],
     };
 
-    const key = Object.keys(fallbackProjects).find((k) => role.includes(k)) || "software developer";
-    projects = fallbackProjects[key];
+  const key = Object.keys(fallbackProjects).find((k) => role.includes(k)) || "software developer";
+  projects = fallbackProjects[key];
   }
 
   return { projects };
+}
+
+// ── Improved Resume Generation ────────────────────────────────────────────
+
+export async function generateImprovedResume(input: {
+  currentResume: string;
+  role: string;
+  skills: string[];
+  missingSkills: string[];
+  suggestions: string[];
+  impactStatements: string[];
+  keywordGaps: string[];
+}) {
+  const { object } = await generateWithFailover(
+    (model) => generateObject({
+      model,
+      schema: improvedResumeSchema,
+      schemaName: "improved_resume",
+      schemaDescription: "AI-improved resume with all fixes applied",
+      prompt: `You are an expert resume writer for Indian college students. Take the current resume below and produce an IMPROVED version that addresses all the issues found.
+
+CURRENT RESUME:
+"""${input.currentResume}"""
+
+TARGET ROLE: ${input.role}
+SKILLS: ${input.skills.join(", ")}
+MISSING SKILLS TO ADD: ${input.missingSkills.join(", ")}
+SUGGESTIONS TO APPLY: ${input.suggestions.join("\n- ")}
+IMPACT STATEMENTS TO INCORPORATE: ${input.impactStatements.join("\n- ")}
+KEYWORD GAPS TO FILL: ${input.keywordGaps.join(", ")}
+
+RULES:
+1. Keep the same structure but apply ALL suggestions
+2. Add the missing skills naturally into the Skills section
+3. Rewrite weak bullet points as quantified impact statements
+4. Add keywords from keywordGaps throughout the resume
+5. Make every line action-verb driven and quantified where possible
+6. Keep it to 1 page (max ~400 words)
+7. Use professional formatting suitable for ATS parsing
+8. The improvedContent should be the FULL resume text ready to use
+9. List every change you made in changesSummary`,
+      temperature: 0.4,
+    }),
+    "REVIEW_RESUME_IMPROVE",
+  );
+  return object;
+}
+
+// ── Improved Profile Generation ───────────────────────────────────────────
+
+export async function generateImprovedProfile(input: {
+  platform: "LINKEDIN" | "GITHUB";
+  role: string;
+  currentDetails: string;
+  suggestions: string[];
+  sectionAnalysis: Array<{ section: string; status: string; note: string }>;
+  whatToAdd: Array<{ item: string; priority: string; reason: string }>;
+}) {
+  const { object } = await generateWithFailover(
+    (model) => generateObject({
+      model,
+      schema: improvedProfileSchema,
+      schemaName: "improved_profile",
+      schemaDescription: `AI-improved ${input.platform} profile content`,
+      prompt: `You are a ${input.platform} optimization expert for Indian college students. Generate the IMPROVED content for their profile.
+
+TARGET ROLE: ${input.role}
+CURRENT PROFILE DETAILS:
+"""${input.currentDetails}"""
+
+SUGGESTIONS TO APPLY: ${input.suggestions.join("\n- ")}
+SECTION ANALYSIS:
+${input.sectionAnalysis.map((s) => `- ${s.section}: ${s.status} — ${s.note}`).join("\n")}
+ITEMS TO ADD:
+${input.whatToAdd.map((a) => `- [${a.priority}] ${a.item} — ${a.reason}`).join("\n")}
+
+Generate:
+- headline: A compelling 120-char headline with role keywords
+- about: A 3-paragraph About section (who you are, what you do, what you're looking for)
+- skillsToAdd: Top skills to add to the profile
+- projectsSection: A well-written projects section with descriptions
+- readmeContent: ${input.platform === "GITHUB" ? "A professional GitHub README.md content" : "Not applicable for LinkedIn"}
+- changesSummary: List every change you made
+
+Make it authentic, specific to the student's profile, and recruiter-friendly.`,
+      temperature: 0.4,
+    }),
+    "REVIEW_PROFILE_IMPROVE",
+  );
+  return object;
 }

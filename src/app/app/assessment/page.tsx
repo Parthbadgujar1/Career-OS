@@ -2,11 +2,10 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { OnboardingWizard } from "@/components/app/onboarding-wizard";
-import { AssessmentQuiz } from "@/components/app/assessment-quiz";
-import { getAssessmentSetsForProfile } from "@/lib/assessment-data";
+import { AdaptiveAssessment } from "@/components/app/adaptive-assessment";
 import { fromJson } from "@/lib/utils";
 
-export const metadata = { title: "Onboarding & Assessment | Student Career OS" };
+export const metadata = { title: "Assessment | Student Career OS" };
 
 export default async function AssessmentPage({
   searchParams,
@@ -20,11 +19,7 @@ export default async function AssessmentPage({
 
   const { step } = await searchParams;
 
-  const taken = await prisma.assessment.findMany({ where: { studentId: profile.id } });
-  const takenTypes = new Set(taken.map((a) => a.type));
-
   if (!profile.onboardedAt || step === "onboard") {
-    // Change-path flow only: the profile previously had data, so allow cancel.
     const showBack = step === "onboard" && (profile.degree !== null || profile.targetRole !== null);
     return (
       <div className="mx-auto max-w-3xl">
@@ -53,38 +48,17 @@ export default async function AssessmentPage({
   }
 
   if (!profile.assessmentComplete) {
-    const assessmentSets = getAssessmentSetsForProfile(profile.degree);
     return (
       <div className="mx-auto max-w-3xl space-y-6">
         <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50 p-5">
-          <h1 className="text-2xl font-bold">Skill grading test 📝</h1>
+          <h1 className="text-2xl font-bold">AI Skill Assessment</h1>
           <p className="mt-1 text-sm text-slate-600">
-            No self-rating here — we measure your real level. Complete the quick tests below and
-            every skill is graded 1–5 from your answers. Once done, your roadmap is rebuilt around
-            exactly what you need to improve.
+            No self-rating here — the AI asks adaptive questions based on your chosen
+            specialization and target role, then grades every skill (1-5) from your answers.
+            Your personalized roadmap is built from the results.
           </p>
         </div>
-        <div>
-          <h2 className="text-lg font-bold">Baseline Assessment</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Your skill grades and personalized roadmap are generated from these results.
-          </p>
-        </div>
-        {assessmentSets.map((set) => (
-          <AssessmentQuiz
-            key={set.type}
-            setType={set.type}
-            title={set.title}
-            description={set.description}
-            questions={set.questions}
-            alreadyTaken={takenTypes.has(set.type)}
-            score={
-              takenTypes.has(set.type)
-                ? taken.find((a) => a.type === set.type)
-                : undefined
-            }
-          />
-        ))}
+        <AdaptiveAssessment />
       </div>
     );
   }

@@ -117,7 +117,7 @@ export function EventsPanel({ events }: { events: EventRow[] }) {
                 </Button>
               )}
               {event.url && (
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="outline" size="sm" asChild aria-label={`Visit ${event.title}`}>
                   <a href={event.url} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4" />
                   </a>

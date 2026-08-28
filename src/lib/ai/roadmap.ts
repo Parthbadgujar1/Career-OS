@@ -1,7 +1,7 @@
 import "server-only";
 import { generateObject } from "ai";
 import { z } from "zod";
-import { getModel } from "@/lib/ai/client";
+import { generateWithFailover } from "@/lib/ai/client";
 
 const milestoneSchema = z.object({
   week: z.number().int().min(1),
@@ -28,12 +28,8 @@ export interface RoadmapInput {
 }
 
 export async function generateRoadmap(input: RoadmapInput, totalWeeks = 12) {
-  const { object } = await generateObject({
-    model: getModel(),
-    schema: roadmapSchema,
-    schemaName: "career_roadmap",
-    schemaDescription: "A personalized career roadmap for a student",
-    prompt: `You are the Career OS engine. Build a personalized ${totalWeeks}-week roadmap for a student targeting a career role.
+  const { object } = await generateWithFailover(
+    (model) => generateObject({ model, schema: roadmapSchema, schemaName: "career_roadmap", schemaDescription: "A personalized career roadmap for a student", prompt: `You are the Career OS engine. Build a personalized ${totalWeeks}-week roadmap for a student targeting a career role.
 
 STUDENT PROFILE
 - Degree: ${input.degree} (${input.specialization || "no specialization"})
@@ -51,8 +47,9 @@ RULES
 4. Return exactly one milestone per week for the full ${totalWeeks} weeks.
 5. Keep descriptions actionable (what to learn/build/practice) and measurable.
 6. Use only the provided category values.
-7. Do not invent certifications that cost money unless widely free (e.g. free courses on YouTube, freeCodeCamp, Kaggle, roadmap.sh).`,
-  });
+7. Do not invent certifications that cost money unless widely free (e.g. free courses on YouTube, freeCodeCamp, Kaggle, roadmap.sh).` }),
+    "ROADMAP",
+  );
 
   return object;
 }
@@ -90,12 +87,8 @@ export async function generateLongTermPlan(
   input: RoadmapInput,
   totalWeeks: number
 ): Promise<{ title: string; summary: string; phases: LongTermPhase[] }> {
-  const { object } = await generateObject({
-    model: getModel(),
-    schema: longPlanSchema,
-    schemaName: "career_long_term_plan",
-    schemaDescription: "A phased long-term career plan for a student",
-    prompt: `You are the Career OS engine. Build a personalized long-term plan of ${totalWeeks} weeks (about ${Math.round(totalWeeks / 52 * 10) / 10} year(s)) for a student targeting a career role.
+  const { object } = await generateWithFailover(
+    (model) => generateObject({ model, schema: longPlanSchema, schemaName: "career_long_term_plan", schemaDescription: "A phased long-term career plan for a student", prompt: `You are the Career OS engine. Build a personalized long-term plan of ${totalWeeks} weeks (about ${Math.round(totalWeeks / 52 * 10) / 10} year(s)) for a student targeting a career role.
 
 STUDENT PROFILE
 - Degree: ${input.degree} (${input.specialization || "no specialization"})
@@ -111,8 +104,9 @@ RULES
 2. Order is beginner → intermediate → advanced, prerequisite-aware. Build weak skills first.
 3. Vary the focus across LEARNING, CODING, PROJECT, PROFILE, INTERVIEW and OPPORTUNITY so the plan is well rounded.
 4. Every phase title and description must be actionable and measurable for the given role.
-5. Keep phases coarse for long horizons (a phase can span many weeks) but every week from 1 to ${totalWeeks} must be covered by exactly one phase.`,
-  });
+5. Keep phases coarse for long horizons (a phase can span many weeks) but every week from 1 to ${totalWeeks} must be covered by exactly one phase.` }),
+    "ROADMAP",
+  );
 
   return object;
 }

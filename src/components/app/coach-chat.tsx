@@ -64,7 +64,7 @@ export function CoachChat({ welcome }: { welcome: string }) {
 
   return (
     <>
-      <Card className="flex flex-col h-[600px] animate-slide-in-up">
+      <Card className="flex flex-col h-[50vh] sm:h-[600px] animate-slide-in-up">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-sm font-bold text-white">
@@ -153,10 +153,11 @@ export function CoachChat({ welcome }: { welcome: string }) {
                   }
                 }}
                 placeholder="Ask about your roadmap, resume, skills, interviews, projects..."
+                aria-label="Type a message to your AI career coach"
                 className="flex-1"
                 disabled={isPending}
               />
-              <Button onClick={() => sendMessage()} disabled={!input.trim() || isPending} size="lg">
+              <Button onClick={() => sendMessage()} disabled={!input.trim() || isPending} size="lg" aria-label="Send message">
                 {isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
               </Button>
             </div>

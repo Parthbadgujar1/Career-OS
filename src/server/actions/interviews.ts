@@ -8,7 +8,7 @@ import { snapshotReadiness } from "@/lib/scoring/readiness";
 import { fromJson } from "@/lib/utils";
 import { generateObject } from "ai";
 import { z } from "zod";
-import { getModel } from "@/lib/ai/client";
+import { generateWithFailover } from "@/lib/ai/client";
 
 type AiType = "TECHNICAL" | "HR" | "BEHAVIORAL";
 
@@ -72,7 +72,9 @@ export async function completeInterviewBookingAction(formData: FormData) {
       score,
       maxScore,
       criteriaScores: JSON.stringify({ Overall: score }),
+      skillCoverage: "[]",
       feedback: JSON.stringify(feedback ? [feedback] : []),
+      weakAreas: "[]",
       evaluatorName: user.name ?? "Mentor",
       meetUrl: booking.slot.meetUrl,
     },
@@ -96,7 +98,7 @@ export async function bookInterviewSlotAction(
   }
 
   await prisma.interviewBooking.create({
-    data: { slotId: slot.id, studentId: profile.id, status: "BOOKED" },
+    data: { slotId: slot.id, studentId: profile.id, status: "BOOKED", feedback: "[]" },
   });
   const active = await prisma.interviewBooking.count({
     where: { slotId: slot.id, status: { not: "CANCELLED" } },
@@ -173,25 +175,28 @@ For the evaluation:
 
 Return the grading matching the schema.`;
 
-      const { object } = await generateObject({
-        model: getModel(),
-        schema: z.object({
-          score: z.number().int().min(0).max(100),
-          perQuestion: z.record(
-            z.string(),
-            z.object({
-              score: z.number().int().min(0).max(100),
-              comment: z.string(),
-            })
-          ),
-          criteriaScores: z.record(z.string(), z.number().int().min(0).max(100)),
-          feedbackList: z.array(z.string()),
-          weakAreas: z.array(z.string()),
+      const { object } = await generateWithFailover(
+        (model) => generateObject({
+          model,
+          schema: z.object({
+            score: z.number().int().min(0).max(100),
+            perQuestion: z.record(
+              z.string(),
+              z.object({
+                score: z.number().int().min(0).max(100),
+                comment: z.string(),
+              })
+            ),
+            criteriaScores: z.record(z.string(), z.number().int().min(0).max(100)),
+            feedbackList: z.array(z.string()),
+            weakAreas: z.array(z.string()),
+          }),
+          schemaName: "interview_grading",
+          schemaDescription: "AI grading of mock interview",
+          prompt,
         }),
-        schemaName: "interview_grading",
-        schemaDescription: "AI grading of mock interview",
-        prompt,
-      });
+        "INTERVIEW_GRADING",
+      );
 
       percent = object.score;
       criteriaScores = object.criteriaScores;
@@ -244,6 +249,7 @@ Return the grading matching the schema.`;
       score: percent,
       maxScore: AI_MAX_SCORE,
       criteriaScores: JSON.stringify(criteriaScores),
+      skillCoverage: "[]",
       transcript: JSON.stringify(perQuestion),
       feedback: JSON.stringify(feedbackList),
       weakAreas: JSON.stringify(weakAreas),
@@ -277,22 +283,25 @@ For each question:
 
 Return the questions list matching the schema.`;
 
-    const { object } = await generateObject({
-      model: getModel(),
-      schema: z.object({
-        questions: z.array(
-          z.object({
-            id: z.string(),
-            question: z.string(),
-            idealKeywords: z.array(z.string()),
-            maxScore: z.number().default(20),
-          })
-        ).length(5),
+    const { object } = await generateWithFailover(
+      (model) => generateObject({
+        model,
+        schema: z.object({
+          questions: z.array(
+            z.object({
+              id: z.string(),
+              question: z.string(),
+              idealKeywords: z.array(z.string()),
+              maxScore: z.number().default(20),
+            })
+          ).length(5),
+        }),
+        schemaName: "interview_questions",
+        schemaDescription: "Dynamically generated mock interview questions",
+        prompt,
       }),
-      schemaName: "interview_questions",
-      schemaDescription: "Dynamically generated mock interview questions",
-      prompt,
-    });
+      "INTERVIEW_QUESTIONS",
+    );
 
     return { ok: true, questions: object.questions };
   } catch (e) {

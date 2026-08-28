@@ -9,7 +9,7 @@ const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>
       className={cn(
         "flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm transition-all duration-200",
         "placeholder:text-slate-400",
-        "focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none",
+        "focus:border-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-500/20 focus-visible:outline-none",
         "hover:border-slate-400",
         "disabled:cursor-not-allowed disabled:opacity-50",
         "file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-slate-700",
@@ -28,7 +28,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLText
       className={cn(
         "flex min-h-[80px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm transition-all duration-200",
         "placeholder:text-slate-400",
-        "focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none",
+        "focus:border-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-500/20 focus-visible:outline-none",
         "hover:border-slate-400",
         "disabled:cursor-not-allowed disabled:opacity-50",
         className
@@ -45,7 +45,7 @@ const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElem
       ref={ref}
       className={cn(
         "flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm transition-all duration-200",
-        "focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none",
+        "focus:border-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-500/20 focus-visible:outline-none",
         "hover:border-slate-400",
         "disabled:cursor-not-allowed disabled:opacity-50",
         className

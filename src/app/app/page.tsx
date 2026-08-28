@@ -4,7 +4,7 @@ import { ArrowRight, CalendarCheck, ListTodo, TrendingUp, Sparkles, Target, Map,
 import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
 import { computeReadiness, readinessLabel } from "@/lib/scoring/readiness";
-import { bumpStreak, ensureDailyTasks } from "@/lib/engine/tasks";
+import { bumpStreak, ensureWeeklyTasks } from "@/lib/engine/tasks";
 import { READINESS_DIMENSIONS, CATEGORY_LABELS } from "@/lib/constants";
 import { fromJson, formatDate, weekLabel } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +28,7 @@ export default async function OverviewPage() {
 
   const [readiness, tasks, latestReport, notifications, roadmap, progressAttempts] = await Promise.all([
     computeReadiness(prisma, profile.id),
-    ensureDailyTasks(prisma, profile.id),
+    ensureWeeklyTasks(prisma, profile.id),
     prisma.weeklyReport.findFirst({
       where: { studentId: profile.id },
       orderBy: { weekEnd: "desc" },

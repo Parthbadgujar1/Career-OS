@@ -24,6 +24,12 @@ export async function requireAdmin() {
   return user;
 }
 
+export async function requireEmployer() {
+  const user = await requireUser();
+  if (user.role !== ROLES.EMPLOYER && user.role !== ROLES.ADMIN) redirect("/app");
+  return user;
+}
+
 export async function requireMentor() {
   const user = await requireUser();
   if (user.role !== ROLES.MENTOR && user.role !== ROLES.ADMIN) redirect("/app");

@@ -27,6 +27,8 @@ async function runResumeReview(
   let missingSkills: string[] = [];
   let suggestions: string[] = [];
   let impactStatements: string[] = [];
+  let sectionAnalysis: Array<{ section: string; status: string; note: string }> = [];
+  let keywordGaps: string[] = [];
 
   if (process.env.GEMINI_API_KEY) {
     try {
@@ -42,6 +44,8 @@ async function runResumeReview(
       missingSkills = review.missingSkills;
       suggestions = review.suggestions;
       impactStatements = review.impactStatements;
+      sectionAnalysis = review.sectionAnalysis ?? [];
+      keywordGaps = review.keywordGaps ?? [];
       if (review.extractedText) {
         resumeText = review.extractedText;
       }
@@ -51,7 +55,6 @@ async function runResumeReview(
   }
 
   if (missingSkills.length === 0 && suggestions.length === 0) {
-    // Deterministic fallback scoring
     const wordCount = resumeText.split(/\s+/).filter(Boolean).length;
     let score = 40;
     if (wordCount > 200) score += 20;
@@ -78,12 +81,12 @@ async function runResumeReview(
     },
   });
 
-  return { atsScore, summary };
+  return { atsScore, summary, missingSkills, suggestions, impactStatements, sectionAnalysis, keywordGaps, content: resumeText };
 }
 
 export async function reviewResumeAction(
   formData: FormData
-): Promise<{ ok: true; atsScore: number; summary: string; content?: string } | { error: string }> {
+): Promise<{ ok: true; atsScore: number; summary: string; content: string; missingSkills: string[]; suggestions: string[]; impactStatements: string[]; sectionAnalysis: Array<{ section: string; status: string; note: string }>; keywordGaps: string[] } | { error: string }> {
   const { profile } = await requireStudentProfile();
   const resumeText = (formData.get("resumeText") as string) || "";
   const role = (formData.get("role") as string) || profile.targetRole || "";
@@ -115,13 +118,21 @@ export async function reviewResumeAction(
     },
   });
 
-  const { atsScore, summary } = await runResumeReview(profile.id, role, resumeText, base64Data, resume.id);
-
-  const updatedResume = await prisma.resume.findUnique({ where: { id: resume.id } });
+  const result = await runResumeReview(profile.id, role, resumeText, base64Data, resume.id);
 
   await snapshotReadiness(prisma, profile.id);
   revalidatePath("/app/reviews");
-  return { ok: true, atsScore, summary, content: updatedResume?.content || resumeText };
+  return {
+    ok: true,
+    atsScore: result.atsScore,
+    summary: result.summary,
+    content: result.content,
+    missingSkills: result.missingSkills,
+    suggestions: result.suggestions,
+    impactStatements: result.impactStatements,
+    sectionAnalysis: result.sectionAnalysis,
+    keywordGaps: result.keywordGaps,
+  };
 }
 
 export async function buildResumeAction(
@@ -167,7 +178,7 @@ export async function buildResumeAction(
 
 export async function reviewProfileAction(
   formData: FormData
-): Promise<{ ok: true; score: number } | { error: string }> {
+): Promise<{ ok: true; score: number; summary: string; findings: string[]; suggestions: string[]; sectionAnalysis: Array<{ section: string; status: string; note: string }>; whatToAdd: Array<{ item: string; priority: string; reason: string }> } | { error: string }> {
   const { profile } = await requireStudentProfile();
   const platform = (formData.get("platform") as "LINKEDIN" | "GITHUB") || "LINKEDIN";
   const url = (formData.get("url") as string) || "";
@@ -236,8 +247,11 @@ ${details || "LinkedIn URL provided. Performing positioning evaluation based on 
   }
 
   let score = platform === "LINKEDIN" ? 45 : 50;
+  let summary = "";
   let findings: string[] = [];
   let suggestions: string[] = [];
+  let sectionAnalysis: Array<{ section: string; status: string; note: string }> = [];
+  let whatToAdd: Array<{ item: string; priority: string; reason: string }> = [];
 
   if (process.env.GEMINI_API_KEY) {
     try {
@@ -248,8 +262,11 @@ ${details || "LinkedIn URL provided. Performing positioning evaluation based on 
         details: evaluatedDetails,
       });
       score = review.score;
+      summary = review.summary;
       findings = review.findings;
       suggestions = review.suggestions;
+      sectionAnalysis = review.sectionAnalysis ?? [];
+      whatToAdd = review.whatToAdd ?? [];
     } catch (e) {
       console.error("[reviews] AI profile review failed", e);
     }
@@ -280,7 +297,7 @@ ${details || "LinkedIn URL provided. Performing positioning evaluation based on 
 
   await snapshotReadiness(prisma, profile.id);
   revalidatePath("/app/reviews");
-  return { ok: true, score };
+  return { ok: true, score, summary, findings, suggestions, sectionAnalysis, whatToAdd };
 }
 
 export async function recommendProjectsAction(): Promise<{ ok: true; count: number } | { error: string }> {
@@ -369,4 +386,74 @@ export async function startRecommendedProjectAction(recommendationId: string) {
   });
   await prisma.projectRecommendation.update({ where: { id: rec.id }, data: { status: "STARTED" } });
   revalidatePath("/app/projects");
+}
+
+// ── AI-Improved Resume Generation ─────────────────────────────────────────
+
+export async function generateImprovedResumeAction(
+  resumeId: string
+): Promise<{ ok: true; improvedContent: string; changesSummary: string[] } | { error: string }> {
+  const { profile } = await requireStudentProfile();
+
+  const resume = await prisma.resume.findUnique({
+    where: { id: resumeId },
+    include: { review: true },
+  });
+  if (!resume || resume.studentId !== profile.id) {
+    return { error: "Resume not found" };
+  }
+
+  const { generateImprovedResume } = await import("@/lib/ai/reviews");
+  const skills = await prisma.studentSkill.findMany({
+    where: { studentId: profile.id },
+    include: { skill: true },
+  });
+
+  const result = await generateImprovedResume({
+    currentResume: resume.content ?? "",
+    role: resume.role ?? profile.targetRole ?? "",
+    skills: skills.map((s) => s.skill.name),
+    missingSkills: resume.review ? JSON.parse(resume.review.missingSkills as string) as string[] : [],
+    suggestions: resume.review ? JSON.parse(resume.review.suggestions as string) as string[] : [],
+    impactStatements: resume.review ? JSON.parse(resume.review.impactStatements as string) as string[] : [],
+    keywordGaps: [],
+  });
+
+  return { ok: true, improvedContent: result.improvedContent, changesSummary: result.changesSummary };
+}
+
+// ── AI-Improved Profile Generation ────────────────────────────────────────
+
+export async function generateImprovedProfileAction(
+  platform: "LINKEDIN" | "GITHUB"
+): Promise<{ ok: true; headline: string; about: string; skillsToAdd: string[]; projectsSection: string; readmeContent: string; changesSummary: string[] } | { error: string }> {
+  const { profile } = await requireStudentProfile();
+
+  const latestReview = await prisma.profileReview.findFirst({
+    where: { studentId: profile.id, platform },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const { generateImprovedProfile } = await import("@/lib/ai/reviews");
+
+  const url = platform === "LINKEDIN" ? profile.linkedinUrl : profile.githubUrl;
+
+  const result = await generateImprovedProfile({
+    platform,
+    role: profile.targetRole ?? "",
+    currentDetails: url || `${platform} profile for ${profile.targetRole || "student"}`,
+    suggestions: latestReview ? JSON.parse(latestReview.suggestions as string) as string[] : [],
+    sectionAnalysis: [],
+    whatToAdd: [],
+  });
+
+  return {
+    ok: true,
+    headline: result.headline,
+    about: result.about,
+    skillsToAdd: result.skillsToAdd,
+    projectsSection: result.projectsSection,
+    readmeContent: result.readmeContent,
+    changesSummary: result.changesSummary,
+  };
 }

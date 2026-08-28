@@ -1,10 +1,21 @@
 import "dotenv/config";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { hash } from "bcryptjs";
 
-const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL ?? "file:./dev.db" });
-const prisma = new PrismaClient({ adapter });
+function createAdapter() {
+  const url = process.env.DATABASE_URL ?? "mysql://root@localhost:3306/career_os";
+  const parsed = new URL(url);
+  return new PrismaMariaDb({
+    host: parsed.hostname || "localhost",
+    port: parsed.port ? Number(parsed.port) : 3306,
+    user: decodeURIComponent(parsed.username || "root"),
+    password: decodeURIComponent(parsed.password || ""),
+    database: (parsed.pathname || "/career_os").replace(/^\//, ""),
+    connectionLimit: 2,
+  });
+}
+const prisma = new PrismaClient({ adapter: createAdapter() });
 
 const SKILLS: { name: string; category: string }[] = [
   { name: "Python", category: "LANGUAGES" },
@@ -181,7 +192,10 @@ async function main() {
       specialization: "Computer Science",
       year: "2nd Year",
       targetRole: "Data Analyst",
+      targetRoles: JSON.stringify(["Data Analyst"]),
       interests: JSON.stringify(["Data & Analytics", "Competitive Programming"]),
+      preferredIndustries: "[]",
+      preferences: "{}",
       weeklyHours: 12,
       onboardedAt: new Date(),
       assessmentComplete: true,

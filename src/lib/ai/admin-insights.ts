@@ -1,7 +1,7 @@
 import "server-only";
 import { generateObject } from "ai";
 import { z } from "zod";
-import { getModel } from "@/lib/ai/client";
+import { generateWithFailover } from "@/lib/ai/client";
 
 const adminInsightsSchema = z.object({
   healthAssessment: z.string(),
@@ -134,8 +134,6 @@ export async function generateAdminAiInsights(metrics: AdminAnalyticsData) {
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (insightsCache.size > 100) insightsCache.clear();
 
-  const model = getModel();
-
   const gapsFormatted = metrics.topSkillsGaps
     .map((g) => `${g.name} (${g.count} students)`)
     .join(", ");
@@ -160,14 +158,16 @@ Generate platform analytics insights for the admin dashboard:
 Keep your language professional, strategic, and highly actionable.`;
 
   try {
-    const { object } = await generateObject({
-      model,
-      schema: adminInsightsSchema,
-      schemaName: "admin_insights",
-      schemaDescription: "AI platform health insights for administrators",
-      prompt,
-      maxRetries: 0,
-    });
+    const { object } = await generateWithFailover(
+      (model) => generateObject({
+        model,
+        schema: adminInsightsSchema,
+        schemaName: "admin_insights",
+        schemaDescription: "AI platform health insights for administrators",
+        prompt,
+      }),
+      "ADMIN_INSIGHTS",
+    );
     insightsCache.set(key, { expiresAt: Date.now() + CACHE_TTL_MS, value: object });
     return object;
   } catch (e) {

@@ -28,7 +28,7 @@ export default function RegisterForm() {
       <CardContent>
         <form action={formAction} className="space-y-4">
           {state && "error" in state && state.error && (
-            <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 animate-fade-in-up">{state.error}</p>
+            <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 animate-fade-in-up">{state.error}</p>
           )}
           <div>
             <Label htmlFor="name">Full name</Label>

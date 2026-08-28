@@ -1,8 +1,9 @@
 import "server-only";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { startOfDay } from "@/lib/utils";
+import { computeProficiency, distributeTasksAcrossWeek, type ComputeResult } from "@/lib/engine/adaptive";
 
-const MAX_TASKS_PER_DAY = 6;
+const TASKS_PER_WEEK = 6;
 const DEFAULT_CODING_TOPICS = ["Arrays", "Strings", "Hash maps", "Linked lists", "Stacks & queues", "Trees", "Graphs", "Dynamic programming", "Recursion", "Sorting"];
 
 function currentWeek(createdAt: Date, today: Date): number {
@@ -10,10 +11,15 @@ function currentWeek(createdAt: Date, today: Date): number {
   return Math.max(1, Math.floor(diff / 7) + 1);
 }
 
-/**
- * Tracks the student's daily activity streak. Counts once per calendar day:
- * an activity on consecutive days extends the streak, a gap resets it.
- */
+function mondayOf(date: Date): Date {
+  const d = startOfDay(date);
+  const day = d.getDay(); // Sun=0 Mon=1 ... Sat=6
+  const diff = day === 0 ? -6 : 1 - day; // shift to Monday
+  return new Date(d.getTime() + diff * 86400000);
+}
+
+// ── Streak ─────────────────────────────────────────────────────────────────
+
 export async function bumpStreak(prisma: PrismaClient, studentId: string, date: Date = new Date()) {
   const today = startOfDay(date);
   const profile = await prisma.studentProfile.findUnique({
@@ -37,20 +43,22 @@ export async function bumpStreak(prisma: PrismaClient, studentId: string, date: 
   return current;
 }
 
+// ── Rollover (weekly) ─────────────────────────────────────────────────────
+
 /**
- * Moves incomplete tasks from previous days onto today, bumping their
- * priority (Section 6.3: "Automatic rollover of incomplete tasks").
+ * Moves incomplete tasks from previous weeks into the current week,
+ * bumping priority so the student does not fall further behind.
  */
 export async function rolloverTasks(prisma: PrismaClient, studentId: string, date: Date = new Date()) {
-  const today = startOfDay(date);
+  const thisMonday = mondayOf(date);
   const pendingOld = await prisma.task.findMany({
-    where: { studentId, status: "PENDING", assignedDate: { lt: today } },
+    where: { studentId, status: "PENDING", weekStart: { lt: thisMonday } },
   });
   for (const task of pendingOld) {
     await prisma.task.update({
       where: { id: task.id },
       data: {
-        assignedDate: today,
+        weekStart: thisMonday,
         rolloverCount: task.rolloverCount + 1,
         priority: task.priority === "LOW" ? "NORMAL" : "HIGH",
       },
@@ -58,6 +66,8 @@ export async function rolloverTasks(prisma: PrismaClient, studentId: string, dat
   }
   return pendingOld.length;
 }
+
+// ── Weakest coding topic ──────────────────────────────────────────────────
 
 async function weakestCodingTopic(prisma: PrismaClient, studentId: string): Promise<string> {
   const subs = await prisma.codingSubmission.findMany({
@@ -86,156 +96,210 @@ async function weakestCodingTopic(prisma: PrismaClient, studentId: string): Prom
   return DEFAULT_CODING_TOPICS[Math.floor(Math.random() * DEFAULT_CODING_TOPICS.length)];
 }
 
+// ── Weekly task generation ────────────────────────────────────────────────
+
 /**
- * Ensures today has a sensible daily plan. Uses roadmap milestones for the
- * current week, rolls over missed work, and adapts coding practice to weak topics.
+ * Creates the week's tasks based on adaptive proficiency levels.
+ * This replaces ensureDailyTasks and runs once per week (on first visit).
  */
-export async function ensureDailyTasks(prisma: PrismaClient, studentId: string, date: Date = new Date()) {
+export async function ensureWeeklyTasks(prisma: PrismaClient, studentId: string, date: Date = new Date()) {
+  const thisMonday = mondayOf(date);
+
+  // 1. Roll over missed tasks from previous weeks
   await rolloverTasks(prisma, studentId, date);
-  const today = startOfDay(date);
 
-  const existing = await prisma.task.count({
-    where: { studentId, assignedDate: today, status: "PENDING" },
+  // 2. If this week already has tasks, return them
+  const existing = await prisma.task.findMany({
+    where: { studentId, weekStart: thisMonday, status: "PENDING" },
   });
-  if (existing >= MAX_TASKS_PER_DAY) {
-    return prisma.task.findMany({ where: { studentId, assignedDate: today }, orderBy: { priority: "desc" } });
-  }
+  if (existing.length >= TASKS_PER_WEEK) return existing;
 
+  // 3. Compute adaptive proficiency
+  const compute = await computeProficiency(prisma, studentId);
+
+  // 4. Get roadmap for project / learning items
   const profile = await prisma.studentProfile.findUnique({
     where: { id: studentId },
     include: { roadmap: { include: { items: { orderBy: { weekNumber: "asc" } } } } },
   });
-  const dayIndex = (today.getDay() + 6) % 7; // Mon=0
+  const weekNumber = profile?.roadmap ? currentWeek(profile.roadmap.createdAt, date) : 1;
+  const roadmapItems = profile?.roadmap?.items.filter((i) => i.weekNumber === weekNumber && i.status === "PENDING") ?? [];
+
+  // 5. Get already-assigned items this week to avoid duplicates
+  const alreadyAssigned = new Set(
+    existing.map((t) => t.roadmapItemId).filter(Boolean) as string[],
+  );
+
+  // 6. Build adaptive mix
+  const mix = buildAdaptiveMix(compute, roadmapItems);
+  const plan = distributeTasksAcrossWeek(TASKS_PER_WEEK, mix);
+
+  // 7. Create tasks
   const created: string[] = [];
+  const categoryPickers = new Map<string, () => Promise<{ title: string; description: string; roadmapItemId?: string } | null>>();
 
-  if (profile?.roadmap) {
-    const week = currentWeek(profile.roadmap.createdAt, today);
-    const weekItems = profile.roadmap.items.filter((i) => i.weekNumber === week && i.status === "PENDING");
-    const pick = (category: string) => {
-      const items = weekItems.filter((i) => i.category === category);
-      if (items.length === 0) return null;
-      return items[dayIndex % items.length];
+  const topic = await weakestCodingTopic(prisma, studentId);
+
+  categoryPickers.set("LEARNING", async () => {
+    const item = roadmapItems.find((i) => i.category === "LEARNING" && !alreadyAssigned.has(i.id));
+    return {
+      title: `Learn: ${item?.title.replace(/^Learn:\s*/, "") ?? topic + " fundamentals"}`,
+      description: item?.description ?? `Study ${topic} basics and complete practice exercises`,
+      roadmapItemId: item?.id,
     };
+  });
 
-    const alreadyAssigned = new Set(
-      (
-        await prisma.task.findMany({
-          where: { studentId, assignedDate: today },
-          select: { roadmapItemId: true },
-        })
-      ).map((t) => t.roadmapItemId)
-    );
+  categoryPickers.set("CODING", async () => {
+    const item = roadmapItems.find((i) => i.category === "CODING" && !alreadyAssigned.has(i.id));
+    return {
+      title: `Code: ${topic} practice`,
+      description: `Solve at least 2 problems on ${topic}. Weak topic — do not skip.`,
+      roadmapItemId: item?.id,
+    };
+  });
 
-    const learning = pick("LEARNING");
-    if (learning && !alreadyAssigned.has(learning.id)) {
-      const t = await prisma.task.create({
-        data: {
-          studentId,
-          title: `Learn: ${learning.title.replace(/^Learn:\s*/, "")}`,
-          description: learning.description,
-          category: "LEARNING",
-          priority: "NORMAL",
-          assignedDate: today,
-          roadmapItemId: learning.id,
-        },
-      });
-      created.push(t.id);
-    }
+  categoryPickers.set("PROJECT", async () => {
+    const item = roadmapItems.find((i) => i.category === "PROJECT" && !alreadyAssigned.has(i.id));
+    return {
+      title: `Project: ${item?.title.replace(/^Project:\s*/, "") ?? "Build a portfolio project"}`,
+      description: item?.description ?? "Continue work on your current project milestone",
+      roadmapItemId: item?.id,
+    };
+  });
 
-    const coding = pick("CODING");
-    if (coding && !alreadyAssigned.has(coding.id)) {
-      const topic = await weakestCodingTopic(prisma, studentId);
-      const t = await prisma.task.create({
+  categoryPickers.set("PROFILE", async () => {
+    const item = roadmapItems.find((i) => i.category === "PROFILE" && !alreadyAssigned.has(i.id));
+    return {
+      title: `Profile: ${item?.title.replace(/^Profile:\s*/, "") ?? "Update resume / LinkedIn"}`,
+      description: item?.description ?? "Update your resume, LinkedIn headline, or GitHub README",
+      roadmapItemId: item?.id,
+    };
+  });
+
+  categoryPickers.set("INTERVIEW", async () => {
+    const item = roadmapItems.find((i) => i.category === "INTERVIEW" && !alreadyAssigned.has(i.id));
+    return {
+      title: `Interview: ${item?.title.replace(/^Interview:\s*/, "") ?? "Mock interview practice"}`,
+      description: item?.description ?? "Complete a mock interview session or practice STAR stories",
+      roadmapItemId: item?.id,
+    };
+  });
+
+  categoryPickers.set("OPPORTUNITY", async () => {
+    const item = roadmapItems.find((i) => i.category === "OPPORTUNITY" && !alreadyAssigned.has(i.id));
+    return {
+      title: `Opportunity: ${item?.title.replace(/^Opportunity:\s*/, "") ?? "Browse & save opportunities"}`,
+      description: item?.description ?? "Browse the Jobs & Internships page and save 2-3 matching positions",
+      roadmapItemId: item?.id,
+    };
+  });
+
+  for (const { category, day } of plan) {
+    const picker = categoryPickers.get(category);
+    if (!picker) continue;
+    const picked = await picker();
+    if (!picked) continue;
+
+    const t = await prisma.task.create({
+      data: {
+        studentId,
+        title: picked.title,
+        description: picked.description,
+        category,
+        priority: category === "CODING" ? "HIGH" : "NORMAL",
+        status: "PENDING",
+        source: "ADAPTIVE",
+        weekStart: thisMonday,
+        suggestedDay: day,
+        frequency: "WEEKLY",
+        estimatedHours: estimateHours(category, compute.band),
+        assignedDate: new Date(), // creation date
+        roadmapItemId: picked.roadmapItemId,
+      },
+    });
+    created.push(t.id);
+  }
+
+  // Fallback: ensure at least 3 tasks exist for the week
+  if (created.length < 3) {
+    const exists = await prisma.task.findFirst({ where: { studentId, weekStart: thisMonday, category: "CODING" } });
+    if (!exists) {
+      await prisma.task.create({
         data: {
           studentId,
           title: `Code: ${topic} practice`,
-          description: `Solve at least 2 problems on ${topic}. Weak topic — do not skip.`,
+          description: `Solve at least 2 problems on ${topic}.`,
           category: "CODING",
           priority: "HIGH",
-          assignedDate: today,
-          roadmapItemId: coding.id,
+          source: "ADAPTIVE",
+          weekStart: thisMonday,
+          suggestedDay: "MON",
+          estimatedHours: 2,
+          assignedDate: new Date(),
         },
       });
-      created.push(t.id);
-    }
-
-    const project = pick("PROJECT");
-    if (project && !alreadyAssigned.has(project.id)) {
-      const t = await prisma.task.create({
-        data: {
-          studentId,
-          title: `Project: ${project.title.replace(/^Project:\s*/, "")}`,
-          description: project.description,
-          category: "PROJECT",
-          priority: "HIGH",
-          assignedDate: today,
-          roadmapItemId: project.id,
-        },
-      });
-      created.push(t.id);
-    }
-
-    // Rotate profile / interview / opportunity through the week
-    const schedule: Record<number, string[]> = {
-      0: ["PROFILE"], // Monday
-      1: [],
-      2: ["INTERVIEW"], // Wednesday
-      3: [],
-      4: ["OPPORTUNITY"], // Friday
-      5: ["PROFILE"], // Saturday
-      6: [],
-    };
-    const wanted = schedule[dayIndex] ?? [];
-    for (const cat of wanted) {
-      const item = pick(cat);
-      if (item && !alreadyAssigned.has(item.id)) {
-        const t = await prisma.task.create({
-          data: {
-            studentId,
-            title: `${cat === "PROFILE" ? "Profile" : cat === "INTERVIEW" ? "Interview" : "Opportunity"}: ${item.title.split(": ").slice(1).join(": ") || item.title}`,
-            description: item.description,
-            category: item.category,
-            priority: "NORMAL",
-            assignedDate: today,
-            roadmapItemId: item.id,
-          },
-        });
-        created.push(t.id);
-      }
     }
   }
 
-  // Always ensure at least one coding + one learning task even without a roadmap
-  if (!profile?.roadmap || created.length < 3) {
-    if (created.length < 3) {
-      const topic = await weakestCodingTopic(prisma, studentId);
-      const exists = await prisma.task.findFirst({
-        where: { studentId, assignedDate: today, category: "CODING" },
-      });
-      if (!exists) {
-        await prisma.task.create({
-          data: {
-            studentId,
-            title: `Code: ${topic} practice`,
-            description: `Solve at least 2 problems on ${topic}.`,
-            category: "CODING",
-            priority: "HIGH",
-            assignedDate: today,
-          },
-        });
-      }
-    }
-  }
-
-  return prisma.task.findMany({ where: { studentId, assignedDate: today }, orderBy: { priority: "desc" } });
+  return prisma.task.findMany({ where: { studentId, weekStart: thisMonday }, orderBy: { suggestedDay: "asc" } });
 }
+
+function buildAdaptiveMix(
+  compute: ComputeResult,
+  roadmapItems: { category: string; id: string }[],
+): Record<string, number> {
+  const base: Record<string, number> = {
+    LEARNING: 0.25,
+    CODING: 0.25,
+    PROJECT: 0.20,
+    PROFILE: 0.10,
+    INTERVIEW: 0.10,
+    OPPORTUNITY: 0.10,
+  };
+
+  // Adjust based on weakest dimensions
+  const weakest = Object.entries(compute.proficiency)
+    .sort((a, b) => a[1] - b[1])
+    .slice(0, 2);
+
+  for (const [key] of weakest) {
+    const cat = key === "coreSkills" ? "LEARNING" : key === "coding" ? "CODING" : key === "projects" ? "PROJECT" : key === "interview" ? "INTERVIEW" : null;
+    if (cat) base[cat] = Math.min(0.40, base[cat] + 0.10);
+  }
+
+  // If student has roadmap, ensure LEARNING and PROJECT are represented
+  if (roadmapItems.length > 0) {
+    base.LEARNING = Math.max(base.LEARNING, 0.20);
+    base.PROJECT = Math.max(base.PROJECT, 0.15);
+  }
+
+  // Normalize to sum = 1.0
+  const total = Object.values(base).reduce((s, v) => s + v, 0);
+  for (const key of Object.keys(base)) {
+    base[key] = base[key] / total;
+  }
+
+  return base;
+}
+
+function estimateHours(category: string, band: string): number {
+  const base: Record<string, number> = {
+    LEARNING: band === "beginner" ? 3 : 2,
+    CODING: 2,
+    PROJECT: 3,
+    PROFILE: 1,
+    INTERVIEW: 1.5,
+    OPPORTUNITY: 1,
+  };
+  return base[category] ?? 1;
+}
+
+// ── Complete / Skip ────────────────────────────────────────────────────────
 
 export async function completeTask(prisma: PrismaClient, studentId: string, taskId: string) {
   const task = await prisma.task.findFirst({ where: { id: taskId, studentId } });
   if (!task) throw new Error("Task not found");
   if (task.roadmapItemId) {
-    // The item may have been cascade-deleted when the roadmap was regenerated
-    // or the path was changed; updateMany is a safe no-op in that case.
     await prisma.roadmapItem.updateMany({
       where: { id: task.roadmapItemId },
       data: { status: "COMPLETED" },
@@ -253,4 +317,4 @@ export async function skipTask(prisma: PrismaClient, studentId: string, taskId: 
   return prisma.task.update({ where: { id: taskId }, data: { status: "SKIPPED", completedAt: new Date() } });
 }
 
-export { currentWeek };
+export { currentWeek, mondayOf };

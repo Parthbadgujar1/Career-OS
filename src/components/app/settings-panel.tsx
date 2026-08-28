@@ -248,7 +248,7 @@ export function SettingsPanel({ profile }: { profile: SettingsProfile }) {
                   {status}
                 </p>
               )}
-              {error && <p className="text-sm font-medium text-rose-600">{error}</p>}
+              {error && <p role="alert" className="text-sm font-medium text-rose-600">{error}</p>}
               <Button type="submit" variant="gradient" disabled={isPending}>
                 {isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
                 Save Changes

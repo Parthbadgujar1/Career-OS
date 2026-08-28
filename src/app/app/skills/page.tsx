@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { Brain, Sparkles, BookOpen } from "lucide-react";
 import { SkillsPanel, type SkillRow } from "@/components/app/skills-panel";
+import { AdaptiveAssessment } from "@/components/app/adaptive-assessment";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,11 @@ export default async function SkillsPage() {
         <p className="text-sm text-slate-500">Track your proficiency across all skill areas</p>
       </div>
 
+      {/* Adaptive Assessment — only show if not yet assessed or allow re-take */}
+      {!profile.assessmentComplete && skills.length === 0 && (
+        <AdaptiveAssessment />
+      )}
+
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="pt-5">
@@ -83,6 +89,23 @@ export default async function SkillsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Re-take assessment option */}
+      {profile.assessmentComplete && (
+        <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-indigo-700">Retake Skill Assessment</p>
+              <p className="text-xs text-slate-500">Update your skill grades with a fresh adaptive test</p>
+            </div>
+            <a href="/app/assessment">
+              <button className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 transition-colors">
+                Retake
+              </button>
+            </a>
+          </div>
+        </div>
+      )}
 
       <SkillsPanel skills={skills} available={available} />
     </div>

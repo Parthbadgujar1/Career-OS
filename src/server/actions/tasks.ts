@@ -3,12 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
-import { ensureDailyTasks, completeTask, skipTask } from "@/lib/engine/tasks";
+import { ensureWeeklyTasks, completeTask, skipTask } from "@/lib/engine/tasks";
 import { generateWeeklyReport } from "@/lib/engine/reports";
 
 export async function ensureTasksAction() {
   const { profile } = await requireStudentProfile();
-  await ensureDailyTasks(prisma, profile.id);
+  await ensureWeeklyTasks(prisma, profile.id);
   revalidatePath("/app/tasks");
 }
 

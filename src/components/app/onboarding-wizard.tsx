@@ -130,7 +130,7 @@ export function OnboardingWizard({
         )}
         <form action={formAction} className="space-y-6">
           {state?.error && (
-            <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{state.error}</p>
+            <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{state.error}</p>
           )}
 
           <div className="grid gap-5 sm:grid-cols-2">
@@ -199,6 +199,7 @@ export function OnboardingWizard({
                         key={r}
                         type="button"
                         onClick={() => toggleRole(r)}
+                        aria-pressed={roles.includes(r)}
                         className={cn(
                           "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
                           roles.includes(r)
@@ -245,6 +246,7 @@ export function OnboardingWizard({
                     key={i}
                     type="button"
                     onClick={() => toggle(interests, setInterests, i)}
+                    aria-pressed={interests.includes(i)}
                     className={cn(
                       "inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
                       interests.includes(i)
@@ -272,6 +274,7 @@ export function OnboardingWizard({
                   key={i}
                   type="button"
                   onClick={() => toggle(industries, setIndustries, i)}
+                  aria-pressed={industries.includes(i)}
                   className={cn(
                     "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
                     industries.includes(i)

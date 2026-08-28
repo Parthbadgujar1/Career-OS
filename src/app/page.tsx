@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -31,6 +32,52 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Reveal } from "@/components/ui/reveal";
 import { READINESS_DIMENSIONS } from "@/lib/constants";
+
+export const metadata: Metadata = {
+  title: "Career OS — Free AI-Powered Career Readiness Platform for Students",
+  description:
+    "From Day 1 of graduation to placement. Assess skills, build projects, practice interviews, and track your career journey — all in one free platform for students.",
+  openGraph: {
+    title: "Career OS — Free AI-Powered Career Readiness Platform",
+    description:
+      "From Day 1 of graduation to placement. Assess skills, build projects, practice interviews, and track your career journey.",
+    type: "website",
+    url: "/",
+  },
+};
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://careeros.in";
+
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Career OS",
+  applicationCategory: "EducationalApplication",
+  operatingSystem: "Web",
+  description:
+    "AI-powered career preparation and placement readiness platform for students. Track skills, build projects, practice interviews, and get personalized career coaching.",
+  url: SITE_URL,
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "INR",
+  },
+  featureList: [
+    "AI-powered skill assessment",
+    "Personalized career roadmap",
+    "Mock interview practice",
+    "Coding problem tracking",
+    "Resume and LinkedIn review",
+    "Weekly adaptive task system",
+    "Career coaching chat",
+    "Job and internship tracker",
+  ],
+  author: {
+    "@type": "Organization",
+    name: "Career OS",
+    url: SITE_URL,
+  },
+};
 
 const TRUST = ["Free for students", "No card required", "5-minute Day-1 setup"];
 
@@ -189,6 +236,10 @@ export default async function LandingPage() {
 
   return (
     <div className="flex-1 bg-white text-slate-900 overflow-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+      />
       {/* ── Header ── */}
       <header className="sticky top-0 z-30 border-b border-slate-100/80 bg-white/80 backdrop-blur-xl animate-fade-in-down">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
@@ -652,9 +703,13 @@ export default async function LandingPage() {
           </div>
           <div className="mt-10 flex flex-wrap items-center gap-4 border-t border-slate-200 pt-6 text-xs text-slate-500">
             <p>&copy; 2026 CareerOS &middot; From Day 1 to Placement.</p>
-            <span className="ml-auto flex items-center gap-1.5">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> Privacy-first
-            </span>
+            <div className="flex items-center gap-3 ml-auto">
+              <Link href="/privacy" className="hover:text-slate-900 transition-colors">Privacy Policy</Link>
+              <Link href="/terms" className="hover:text-slate-900 transition-colors">Terms of Service</Link>
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> Privacy-first
+              </span>
+            </div>
           </div>
         </div>
       </footer>

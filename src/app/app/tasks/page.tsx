@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
-import { bumpStreak, ensureDailyTasks } from "@/lib/engine/tasks";
+import { bumpStreak, ensureWeeklyTasks } from "@/lib/engine/tasks";
 import { completeTaskAction, skipTaskAction, ensureTasksAction } from "@/server/actions/tasks";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default async function TasksPage() {
   const { profile } = await requireStudentProfile();
-  const tasks = await ensureDailyTasks(prisma, profile.id);
+  const tasks = await ensureWeeklyTasks(prisma, profile.id);
   const streak = await bumpStreak(prisma, profile.id);
 
   const total = tasks.length;
