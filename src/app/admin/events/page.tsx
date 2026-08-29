@@ -138,6 +138,15 @@ export default async function AdminEventsPage() {
                 <Label htmlFor="description">Description</Label>
                 <Textarea id="description" name="description" rows={3} />
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="focusRoles">Target career roles (optional, comma-separated)</Label>
+                <Input id="focusRoles" name="focusRoles" placeholder="e.g. Software Developer, Data Analyst" />
+                <p className="text-xs text-slate-400">Personalized matching for students targeting these roles.</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="focusIndustries">Target industries (optional, comma-separated)</Label>
+                <Input id="focusIndustries" name="focusIndustries" placeholder="e.g. Fintech, AI & ML" />
+              </div>
               <Button type="submit" variant="gradient" className="w-full">
                 Create Event
               </Button>

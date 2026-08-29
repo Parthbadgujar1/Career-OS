@@ -10,12 +10,15 @@ export async function ensureTasksAction() {
   const { profile } = await requireStudentProfile();
   await ensureWeeklyTasks(prisma, profile.id);
   revalidatePath("/app/tasks");
+  revalidatePath("/app/roadmap");
+  revalidatePath("/app");
 }
 
 export async function completeTaskAction(taskId: string) {
   const { profile } = await requireStudentProfile();
   await completeTask(prisma, profile.id, taskId);
   revalidatePath("/app/tasks");
+  revalidatePath("/app/roadmap");
   revalidatePath("/app");
 }
 
@@ -23,6 +26,8 @@ export async function skipTaskAction(taskId: string) {
   const { profile } = await requireStudentProfile();
   await skipTask(prisma, profile.id, taskId);
   revalidatePath("/app/tasks");
+  revalidatePath("/app/roadmap");
+  revalidatePath("/app");
 }
 
 export async function generateWeeklyReportAction() {
@@ -45,5 +50,11 @@ export async function markRoadmapItemCompleteAction(itemId: string) {
     where: { id: itemId },
     data: { status: "COMPLETED" },
   });
+  await prisma.task.updateMany({
+    where: { studentId: profile.id, roadmapItemId: itemId, status: "PENDING" },
+    data: { status: "COMPLETED", completedAt: new Date() },
+  });
   revalidatePath("/app/roadmap");
+  revalidatePath("/app/tasks");
+  revalidatePath("/app");
 }

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
 import { markRoadmapItemCompleteAction } from "@/server/actions/tasks";
-import { currentWeek } from "@/lib/engine/tasks";
+import { activeRoadmapWeek } from "@/lib/engine/tasks";
 import { CATEGORY_LABELS, durationLabel } from "@/lib/constants";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge, Progress } from "@/components/ui/badge";
@@ -33,7 +33,9 @@ export default async function RoadmapPage() {
     );
   }
 
-  const week = currentWeek(roadmap.createdAt, new Date());
+  const activeWeek = activeRoadmapWeek(roadmap.items);
+  const week = activeWeek ?? roadmap.totalWeeks;
+  const roadmapComplete = activeWeek === null;
   const grouped = new Map<number, typeof roadmap.items>();
   for (const item of roadmap.items) {
     if (!grouped.has(item.weekNumber)) grouped.set(item.weekNumber, []);
@@ -50,7 +52,7 @@ export default async function RoadmapPage() {
         <div>
           <h1 className="text-2xl font-bold">Your Roadmap</h1>
           <p className="text-sm text-slate-500">
-            {roadmap.title} · {durationLabel(roadmap.totalWeeks)} · currently on week {Math.min(week, roadmap.totalWeeks)}
+            {roadmap.title} · {durationLabel(roadmap.totalWeeks)} · {roadmapComplete ? "roadmap complete" : `currently on week ${Math.min(week, roadmap.totalWeeks)}`}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -88,7 +90,7 @@ export default async function RoadmapPage() {
 
       <div className="space-y-6">
         {Array.from(grouped.entries()).map(([weekNumber, items]) => {
-          const isCurrent = weekNumber === Math.min(week, roadmap.totalWeeks);
+          const isCurrent = weekNumber === week;
           return (
             <div key={weekNumber}>
               <div className="mb-2 flex items-center gap-2">
@@ -121,6 +123,11 @@ export default async function RoadmapPage() {
                       </p>
                       {item.description && !item.status.includes("COMPLETED") && (
                         <p className="mt-0.5 text-sm text-slate-500">{item.description}</p>
+                      )}
+                      {item.relevance && (
+                        <p className="mt-1 text-xs italic text-indigo-600/80">
+                          Why it matters: {item.relevance}
+                        </p>
                       )}
                     </div>
                     {item.status !== "COMPLETED" && (

@@ -21,10 +21,26 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   studentProfile   StudentProfile?
+  mentorProfile    MentorProfile?
   mentorStudents   StudentProfile[] @relation("MentorStudents")
   interviewSlots   InterviewSlot[]  @relation("InterviewSlots")
   postedOpportunities Opportunity[] @relation("PostedOpportunities")
   passwordResetTokens PasswordResetToken[]
+}
+
+// Expertise metadata used for personalized mentor assignment
+model MentorProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expertiseRoles    String?  @db.Text // JSON array of career roles
+  expertiseIndustries String? @db.Text // JSON array of industries
+  yearsExperience   Int      @default(0)
+  bio               String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -81,11 +97,13 @@ model StudentProfile {
   degree            String? // B.Tech, B.Sc, BCA, BBA, MBA, MCA, M.Tech, M.Sc ...
   specialization    String?
   year              String? // 1st, 2nd, 3rd, 4th, Final
-  targetRole        String? // Primary target role (first selected)
+  currentlyPursuing String? // Free text: what the user is studying/doing now
+  targetRole        String? // Primary target role (first selected) — the future career
   targetRoles       String    @db.Text // JSON array of all selected target roles
-  interests         String    @db.Text // JSON array of interests
-  weeklyHours       Int       @default(8)
-  preferredIndustries String  @db.Text // JSON array
+  interests         String    @db.Text // JSON array of interests (optional, multi)
+  dailyHours        Int       @default(2) // Hours the user can dedicate per day
+  weeklyHours       Int       @default(14) // Derived: dailyHours * 7
+  preferredIndustries String  @db.Text // JSON array — industry of choice
   onboardedAt       DateTime?
   assessmentComplete Boolean  @default(false)
   nextProgressTestDueAt DateTime?
@@ -111,9 +129,9 @@ model StudentProfile {
   projects                Project[]
   projectRecommendations  ProjectRecommendation[]
   codingSubmissions       CodingSubmission[]
-  quizResults             QuizResult[]
   eventParticipations     EventParticipation[]
   opportunityActions      OpportunityAction[]
+  opportunitySuggestions  OpportunitySuggestion[]
   notifications           Notification[]
   readinessSnapshots      ReadinessSnapshot[]
   interviews              MockInterview[]
@@ -202,6 +220,7 @@ model RoadmapItem {
   weekNumber  Int
   title       String
   description String?  @db.Text
+  relevance   String?  @db.Text
   category    String // LEARNING | CODING | PROJECT | PROFILE | INTERVIEW | OPPORTUNITY
   order       Int      @default(0)
   status      String   @default("PENDING") // PENDING | IN_PROGRESS | COMPLETED
@@ -362,36 +381,6 @@ model CodingSubmission {
   @@index([problemId])
 }
 
-// ============ QUIZZES ============
-
-model Quiz {
-  id            String   @id @default(cuid())
-  title         String
-  topic         String
-  difficulty    String   @default("EASY")
-  questionCount Int      @default(10)
-  questions     String   @db.Text // JSON of questions
-  createdAt     DateTime @default(now())
-
-  results QuizResult[]
-
-  @@index([topic, difficulty])
-}
-
-model QuizResult {
-  id        String         @id @default(cuid())
-  studentId String
-  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  quizId    String
-  quiz      Quiz           @relation(fields: [quizId], references: [id])
-  score     Int
-  maxScore  Int
-  answers   String         @db.Text // JSON
-  createdAt DateTime       @default(now())
-
-  @@index([studentId, createdAt])
-}
-
 // ============ OPPORTUNITIES & EVENTS ============
 
 model Opportunity {
@@ -431,6 +420,21 @@ model OpportunityAction {
   @@unique([studentId, opportunityId, action])
 }
 
+// Cached AI opportunity suggestions — generated once per profile, refreshed
+// only on explicit refresh or when the underlying profile state changes.
+model OpportunitySuggestion {
+  id         String   @id @default(cuid())
+  studentId  String
+  student    StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  data       String   @db.LongText // Full JSON of the suggestion result
+  versionKey String   @db.Text // Snapshot of profile inputs (role, skills, interests) used to detect staleness
+  status     String   @default("READY") // READY | PENDING | FAILED — lets concurrent requests dedupe generation
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([studentId])
+}
+
 // Employer-side pipeline tracking per application
 model ApplicationStatus {
   id            String      @id @default(cuid())
@@ -450,15 +454,17 @@ model ApplicationStatus {
 }
 
 model Event {
-  id          String   @id @default(cuid())
-  title       String
-  type        String // HACKATHON | WEBINAR | WORKSHOP | CONTEST | CAREER
-  description String?  @db.Text
-  startsAt    DateTime
-  endsAt      DateTime?
-  location    String?
-  url         String?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  title         String
+  type          String // HACKATHON | WEBINAR | WORKSHOP | CONTEST | CAREER
+  description   String?  @db.Text
+  startsAt      DateTime
+  endsAt        DateTime?
+  location      String?
+  url           String?
+  focusRoles    String?  @db.Text // JSON array of career roles this event targets
+  focusIndustries String? @db.Text // JSON array of industries
+  createdAt     DateTime @default(now())
 
   participations EventParticipation[]
 
@@ -593,7 +599,8 @@ model JdMatchResult {
   matchedSkills   String   @db.Text // JSON array
   missingKeywords String   @db.Text // JSON array
   suggestions     String   @db.Text // JSON array
-  verdict         String? // AI one-line verdict
+  verdict         String? // verdict key: strong_match | good_match | partial_match | weak_match
+  analysis        String?  @db.LongText // Full structured breakdown JSON (partial skills, categories, gaps, next steps, etc.)
   createdAt       DateTime @default(now())
 
   @@index([studentId, createdAt])

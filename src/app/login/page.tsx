@@ -1,9 +1,14 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import LoginForm from "@/components/auth/login-form";
 
 export const metadata = { title: "Log in" };
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const session = await auth();
+  if (session?.user?.id) redirect("/app");
+
   const googleEnabled = !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET;
   return (
     <main className="relative flex flex-1 items-center justify-center overflow-hidden px-6 py-12">

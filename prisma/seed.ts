@@ -95,39 +95,6 @@ const CODING_PROBLEMS = [
   { title: "Valid Palindrome", topic: "Strings", difficulty: "EASY", description: "Given a string s, return true if it is a palindrome considering only alphanumeric characters.", starterCode: "def is_palindrome(s):\n    # write your solution\n    pass", solution: "Two pointers, skip non-alphanumerics." },
 ];
 
-const QUIZZES = [
-  { title: "SQL Basics Quiz", topic: "SQL", difficulty: "EASY", questionCount: 5 },
-  { title: "DSA Fundamentals Quiz", topic: "DSA", difficulty: "MEDIUM", questionCount: 5 },
-  { title: "DBMS Core Concepts Quiz", topic: "DBMS", difficulty: "MEDIUM", questionCount: 5 },
-];
-
-function quizQuestions(topic: string) {
-  const banks: Record<string, { question: string; options: string[]; answer: number }[]> = {
-    SQL: [
-      { question: "Which SQL command is used to retrieve data?", options: ["SELECT", "GET", "FETCH", "PULL"], answer: 0 },
-      { question: "Which clause filters rows before grouping?", options: ["HAVING", "WHERE", "FILTER", "GROUP BY"], answer: 1 },
-      { question: "Which join returns only matching rows?", options: ["LEFT JOIN", "INNER JOIN", "RIGHT JOIN", "FULL JOIN"], answer: 1 },
-      { question: "Which function counts rows in a group?", options: ["SUM()", "COUNT()", "AVG()", "TOTAL()"], answer: 1 },
-      { question: "Which keyword removes duplicate rows?", options: ["UNIQUE", "DISTINCT", "ONLY", "FRESH"], answer: 1 },
-    ],
-    DSA: [
-      { question: "Which data structure is LIFO?", options: ["Queue", "Stack", "Array", "Set"], answer: 1 },
-      { question: "Worst-case time of linear search?", options: ["O(1)", "O(log n)", "O(n)", "O(n²)"], answer: 2 },
-      { question: "Which structure stores key-value pairs?", options: ["Hash Map", "Stack", "Queue", "Tree"], answer: 0 },
-      { question: "What is the height of a balanced BST with 7 nodes?", options: ["2", "3", "7", "4"], answer: 1 },
-      { question: "Which sort is O(n log n) average?", options: ["Bubble", "Selection", "Insertion", "Merge"], answer: 3 },
-    ],
-    DBMS: [
-      { question: "ACID stands for...", options: ["Atomicity, Consistency, Isolation, Durability", "Autonomy, Clarity, Integrity, Data", "Access, Control, Index, Delete", "All, Core, Integrated, Data"], answer: 0 },
-      { question: "Which is a relational DBMS?", options: ["MongoDB", "PostgreSQL", "Redis", "Cassandra"], answer: 1 },
-      { question: "A foreign key is used to...", options: ["Index a table", "Link two tables", "Delete data", "Encrypt data"], answer: 1 },
-      { question: "Normalization reduces...", options: ["Query speed", "Data redundancy", "Table count", "Memory"], answer: 1 },
-      { question: "Which is an aggregate function?", options: ["WHERE", "GROUP BY", "AVG()", "SELECT"], answer: 2 },
-    ],
-  };
-  return banks[topic] ?? [];
-}
-
 const OPPORTUNITIES = [
   { title: "Data Analyst Internship", platform: "internshala", type: "INTERNSHIP", url: "https://internshala.com/internships/data-analytics-internship", description: "2-month data analyst internship for students with SQL + Python basics. Apply via Internshala.", tags: ["data analyst", "sql", "python"], eligibility: ["B.Tech", "B.Sc", "BCA", "MCA"] },
   { title: "Software Developer Jobs", platform: "linkedin", type: "JOB", url: "https://www.linkedin.com/jobs/software-developer-jobs", description: "Fresh-graduate software developer roles across India. Redirects to LinkedIn Jobs.", tags: ["software developer", "developer", "java", "python"], eligibility: ["B.Tech", "MCA", "M.Tech"] },
@@ -223,16 +190,6 @@ async function main() {
     const existing = await prisma.codingProblem.findFirst({ where: { title: p.title } });
     if (!existing) {
       await prisma.codingProblem.create({ data: p });
-    }
-  }
-
-  // Quizzes
-  for (const q of QUIZZES) {
-    const existing = await prisma.quiz.findFirst({ where: { title: q.title } });
-    if (!existing) {
-      await prisma.quiz.create({
-        data: { ...q, questions: JSON.stringify(quizQuestions(q.topic)) },
-      });
     }
   }
 

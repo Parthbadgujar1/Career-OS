@@ -46,20 +46,3 @@ export async function matchOpportunities(prisma: PrismaClient, studentId: string
 
   return scored;
 }
-
-export async function recordOpportunityAction(
-  prisma: PrismaClient,
-  studentId: string,
-  opportunityId: string,
-  action: "VIEWED" | "SAVED" | "APPLIED" | "COMPLETED"
-) {
-  const existing = await prisma.opportunityAction.findUnique({
-    where: { studentId_opportunityId_action: { studentId, opportunityId, action } },
-  });
-  if (!existing) {
-    return prisma.opportunityAction.create({
-      data: { studentId, opportunityId, action },
-    });
-  }
-  return existing;
-}

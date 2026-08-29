@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminReportsPage() {
   await requireAdmin();
 
-  const [students, tasks, codingSolved, quizzes, assessments, interviews, skillRatings] = await Promise.all([
+  const [students, tasks, codingSolved, assessments, interviews, skillRatings] = await Promise.all([
     prisma.studentProfile.findMany({
       include: { user: { select: { name: true, email: true } } },
       orderBy: { readinessScore: "desc" },
@@ -19,7 +19,6 @@ export default async function AdminReportsPage() {
       _count: { _all: true },
     }),
     prisma.codingSubmission.count({ where: { status: "SOLVED" } }),
-    prisma.quizResult.count(),
     prisma.assessment.count(),
     prisma.mockInterview.count(),
     prisma.studentSkill.findMany({
@@ -81,7 +80,7 @@ export default async function AdminReportsPage() {
         <Card>
           <CardContent className="pt-5">
             <ClipboardCheck className="h-4 w-4 text-slate-400" />
-            <p className="mt-1 text-3xl font-bold">{assessments + quizzes}</p>
+            <p className="mt-1 text-3xl font-bold">{assessments}</p>
             <p className="text-xs text-slate-400">Assessments</p>
           </CardContent>
         </Card>

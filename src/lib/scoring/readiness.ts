@@ -27,7 +27,7 @@ const DEFAULT_EXPLAIN: Record<DimensionKey, string> = {
   aptitude: "No aptitude assessment taken yet.",
   interview: "No mock interviews taken yet.",
   consistency: "No weekly task data yet.",
-  careerActivities: "No quiz / event participation yet.",
+  careerActivities: "No event or opportunity activity yet.",
   roleReadiness: "No role-specific evidence yet.",
 };
 
@@ -65,7 +65,6 @@ export async function computeReadiness(
     resumes,
     profileReviews,
     reports,
-    quizResults,
     participations,
     interviews,
     roadmap,
@@ -85,7 +84,6 @@ export async function computeReadiness(
     }),
     prisma.profileReview.findMany({ where: { studentId }, orderBy: { createdAt: "desc" } }),
     prisma.weeklyReport.findMany({ where: { studentId }, orderBy: { weekEnd: "desc" } }),
-    prisma.quizResult.findMany({ where: { studentId } }),
     prisma.eventParticipation.findMany({ where: { studentId } }),
     prisma.mockInterview.findMany({ where: { studentId } }),
     prisma.roadmap.findUnique({ where: { studentId }, include: { items: true } }),
@@ -161,10 +159,10 @@ export async function computeReadiness(
   }
 
   // 8. Career activities
-  const activities = participations.length + quizResults.length + opportunityActions.length;
+  const activities = participations.length + opportunityActions.length;
   if (activities > 0) {
     ev.careerActivities = Math.min(100, Math.round((activities / 10) * 100));
-    explain.careerActivities = `${participations.length} events, ${quizResults.length} quizzes, ${opportunityActions.length} saved/applied opportunities.`;
+    explain.careerActivities = `${participations.length} events registered, ${opportunityActions.length} saved/applied opportunities.`;
   }
 
   // 9. Role-specific readiness

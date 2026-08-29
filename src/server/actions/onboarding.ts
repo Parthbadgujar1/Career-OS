@@ -16,8 +16,9 @@ const onboardingSchema = z.object({
   degree: z.string().min(1, "Select your degree"),
   specialization: z.string().optional(),
   year: z.string().min(1, "Select your year"),
+  currentlyPursuing: z.string().optional(),
   targetRoles: z.string(), // JSON array of roles
-  weeklyHours: z.coerce.number().int().min(1).max(60),
+  dailyHours: z.coerce.number().int().min(1).max(24),
   interests: z.string(), // JSON array
   industries: z.string(), // JSON array
 });
@@ -29,8 +30,9 @@ export async function saveOnboardingAction(_prev: unknown, formData: FormData) {
     degree: formData.get("degree"),
     specialization: formData.get("specialization"),
     year: formData.get("year"),
+    currentlyPursuing: formData.get("currentlyPursuing"),
     targetRoles: formData.get("targetRoles"),
-    weeklyHours: formData.get("weeklyHours"),
+    dailyHours: formData.get("dailyHours"),
     interests: formData.get("interests"),
     industries: formData.get("industries"),
   });
@@ -46,6 +48,8 @@ export async function saveOnboardingAction(_prev: unknown, formData: FormData) {
   if (targetRoles.length === 0) {
     return { error: "Select at least one target role" };
   }
+  const weeklyHours = Math.min(60, data.dailyHours * 7);
+  const dailyHours = data.dailyHours;
 
   await prisma.studentProfile.update({
     where: { id: profile.id },
@@ -53,16 +57,18 @@ export async function saveOnboardingAction(_prev: unknown, formData: FormData) {
       degree: data.degree,
       specialization: data.specialization,
       year: data.year,
-      targetRole: targetRoles[0],
+      currentlyPursuing: data.currentlyPursuing,
+      targetRole: targetRoles[0] || profile.targetRole,
       targetRoles: JSON.stringify(targetRoles),
-      weeklyHours: data.weeklyHours,
+      dailyHours,
+      weeklyHours,
       interests: JSON.stringify(interests),
       preferredIndustries: JSON.stringify(industries),
       onboardedAt: new Date(),
     },
   });
 
-  // Skills are graded by the baseline test, not self-rated. Clear previous
+  // Skills are graded by the AI assessment, not self-rated. Clear previous
   // ratings and assessments so grading always reflects the current path.
   await prisma.studentSkill.deleteMany({ where: { studentId: profile.id } });
   await prisma.assessment.deleteMany({ where: { studentId: profile.id } });
@@ -72,7 +78,7 @@ export async function saveOnboardingAction(_prev: unknown, formData: FormData) {
   });
 
   // Starter roadmap from profile alone — replaced with a graded-skill version
-  // once the baseline test is complete.
+  // once the AI skill assessment is complete.
   await persistRoadmap(
     prisma,
     profile.id,
@@ -80,9 +86,9 @@ export async function saveOnboardingAction(_prev: unknown, formData: FormData) {
       degree: data.degree,
       specialization: data.specialization ?? "",
       year: data.year,
-      targetRole: targetRoles[0],
+      targetRole: targetRoles[0] || profile.targetRole || "Career Seeker",
       interests,
-      weeklyHours: data.weeklyHours,
+      weeklyHours,
       skills: [],
       weakSkills: [],
     },
@@ -91,7 +97,7 @@ export async function saveOnboardingAction(_prev: unknown, formData: FormData) {
   );
 
   revalidatePath("/app/assessment");
-  redirect("/app/assessment?step=quiz");
+  redirect("/app/assessment");
 }
 
 export async function submitAssessmentAction(

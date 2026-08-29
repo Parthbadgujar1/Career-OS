@@ -3,11 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
-import { recordOpportunityAction } from "@/lib/engine/opportunities";
 import { snapshotReadiness } from "@/lib/scoring/readiness";
 import { APTITUDE_PRACTICE_SETS } from "@/lib/assessment-data";
 import { evaluateCodeSolution } from "@/lib/ai/coding";
-import { APPLICATION_STATUSES } from "@/lib/constants";
 
 export async function registerEventAction(eventId: string) {
   const { profile } = await requireStudentProfile();
@@ -52,40 +50,6 @@ export async function submitAptitudePracticeAction(
   return { ok: true, setKey, score, maxScore: set.questions.length };
 }
 
-export async function saveOpportunityAction(opportunityId: string) {
-  const { profile } = await requireStudentProfile();
-  await recordOpportunityAction(prisma, profile.id, opportunityId, "SAVED");
-  revalidatePath("/app/opportunities");
-}
-
-export async function applyOpportunityAction(opportunityId: string) {
-  const { profile } = await requireStudentProfile();
-  await recordOpportunityAction(prisma, profile.id, opportunityId, "APPLIED");
-  await snapshotReadiness(prisma, profile.id);
-  revalidatePath("/app/opportunities");
-}
-
-export async function updateApplicationStatusAction(
-  actionId: string,
-  status: string
-): Promise<{ ok: boolean; error?: string }> {
-  const { profile } = await requireStudentProfile();
-  if (!APPLICATION_STATUSES.includes(status as (typeof APPLICATION_STATUSES)[number])) {
-    return { ok: false, error: "Invalid application status." };
-  }
-  const action = await prisma.opportunityAction.findFirst({
-    where: { id: actionId, studentId: profile.id },
-  });
-  if (!action) return { ok: false, error: "Application not found." };
-  await prisma.opportunityAction.update({
-    where: { id: actionId },
-    data: { action: status },
-  });
-  await snapshotReadiness(prisma, profile.id);
-  revalidatePath("/app/applications");
-  return { ok: true };
-}
-
 export async function recordCodingSubmissionAction(problemId: string, status: string, code: string) {
   const { profile } = await requireStudentProfile();
   const problem = await prisma.codingProblem.findUnique({ where: { id: problemId } });
@@ -126,34 +90,6 @@ export async function recordMockInterviewAction(formData: FormData) {
   await snapshotReadiness(prisma, profile.id);
   revalidatePath("/app/interviews");
   return { ok: true };
-}
-
-export async function submitQuizAction(
-  quizId: string,
-  answers: Record<string, number>
-): Promise<{ ok: true; score: number; maxScore: number } | { error: string }> {
-  const { profile } = await requireStudentProfile();
-  const quiz = await prisma.quiz.findUnique({ where: { id: quizId } });
-  if (!quiz) return { error: "Quiz not found" };
-
-  const questions = JSON.parse(quiz.questions) as { options: string[]; answer: number }[];
-  let score = 0;
-  questions.forEach((q, i) => {
-    if (answers[i] === q.answer) score++;
-  });
-
-  await prisma.quizResult.create({
-    data: {
-      studentId: profile.id,
-      quizId,
-      score,
-      maxScore: questions.length,
-      answers: JSON.stringify(answers),
-    },
-  });
-  await snapshotReadiness(prisma, profile.id);
-  revalidatePath("/app/quizzes");
-  return { ok: true, score, maxScore: questions.length };
 }
 
 export async function getAiCodingFeedbackAction(

@@ -3,13 +3,13 @@ import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils";
 
 const variants = {
-  default: "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-600/20 hover:shadow-lg hover:shadow-indigo-600/30 hover:-translate-y-px active:translate-y-0 active:scale-[0.96]",
+  default: "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/25 hover:shadow-lg hover:shadow-indigo-600/35 hover:-translate-y-px active:translate-y-0 active:scale-[0.96]",
   secondary: "bg-slate-100 text-slate-900 hover:bg-slate-200 border border-slate-200 hover:border-slate-300 hover:-translate-y-px active:translate-y-0 active:scale-[0.96]",
   outline: "border border-slate-300 text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 hover:-translate-y-px active:translate-y-0 active:scale-[0.96] bg-white",
   ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.96]",
-  danger: "bg-rose-600 text-white hover:bg-rose-700 shadow-sm shadow-rose-600/20 hover:shadow-lg hover:shadow-rose-600/30 hover:-translate-y-px active:translate-y-0 active:scale-[0.96]",
-  success: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-600/20 hover:shadow-lg hover:shadow-emerald-600/30 hover:-translate-y-px active:translate-y-0 active:scale-[0.96]",
-  gradient: "btn-shine bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 text-white hover:from-indigo-700 hover:via-purple-700 hover:to-cyan-600 shadow-md shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.95]",
+  danger: "bg-rose-600 text-white hover:bg-rose-700 shadow-md shadow-rose-600/20 hover:shadow-lg hover:shadow-rose-600/30 hover:-translate-y-px active:translate-y-0 active:scale-[0.96]",
+  success: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-600/20 hover:shadow-lg hover:shadow-emerald-600/30 hover:-translate-y-px active:translate-y-0 active:scale-[0.96]",
+  gradient: "btn-shine bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 text-white hover:from-indigo-700 hover:via-violet-700 hover:to-purple-700 shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/45 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.95]",
 };
 
 const sizes = {
@@ -33,7 +33,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <Comp
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 ease-out will-change-transform focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none disabled:hover:translate-y-0 cursor-pointer select-none",
+          "inline-flex items-center justify-center gap-2 rounded-xl font-display font-semibold tracking-tight transition-all duration-200 ease-out will-change-transform focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none disabled:hover:translate-y-0 cursor-pointer select-none",
           variants[variant],
           sizes[size],
           className

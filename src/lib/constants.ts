@@ -156,6 +156,178 @@ export const CAREER_ROLES = [
   "Business Analyst",
 ] as const;
 
+// Client-safe career info used to render "About this career" cards in the onboarding wizard.
+// Mirrors the server-side careers registry summaries in concise form.
+export const CAREER_BLURBS: Record<string, { what: string; skills: string[] }> = {
+  "Software Developer": {
+    what: "Builds and maintains the applications and systems companies run on — web, desktop and backend.",
+    skills: ["Data Structures & Algorithms", "SQL", "Git", "OOP", "REST APIs", "Problem Solving"],
+  },
+  "Frontend Developer": {
+    what: "Builds the interfaces users see — turning designs into responsive, fast web apps.",
+    skills: ["HTML/CSS & JavaScript", "React", "TypeScript", "Tailwind", "Responsive Design", "Web Performance"],
+  },
+  "Backend Developer": {
+    what: "Builds the servers, databases and APIs that power applications securely at scale.",
+    skills: ["Node / Python / Java", "SQL & NoSQL", "REST / GraphQL", "System Design", "Caching", "Security & Testing"],
+  },
+  "Full-Stack Developer": {
+    what: "Owns the whole product — frontend, backend, database and deployment.",
+    skills: ["HTML/CSS/JS", "React", "Node / Python", "SQL", "REST APIs", "Git & Deployments"],
+  },
+  "Data Analyst": {
+    what: "Turns raw data into decisions — cleaning, analysing and visualising it for stakeholders.",
+    skills: ["SQL", "Excel", "Python (pandas)", "Power BI / Tableau", "Statistics", "Dashboards"],
+  },
+  "Data Scientist": {
+    what: "Models and predicts — applying statistics and machine learning to business problems.",
+    skills: ["Python (numpy/pandas)", "Statistics", "ML Algorithms", "Feature Engineering", "Model Evaluation", "SQL"],
+  },
+  "AI/ML Engineer": {
+    what: "Ships machine learning systems — covering everything from the model to production.",
+    skills: ["Python", "PyTorch / TensorFlow", "ML Pipeline Design", "Model Deployment", "LLMs / RAG", "Docker"],
+  },
+  "DevOps Engineer": {
+    what: "Automates and operates infrastructure so teams can ship quickly and reliably.",
+    skills: ["Linux", "Docker", "Kubernetes", "CI/CD", "AWS / Azure / GCP", "Terraform", "Monitoring"],
+  },
+  "QA / Test Engineer": {
+    what: "Guards product quality by designing test plans and automating checks.",
+    skills: ["Manual Testing", "Automation (Selenium / Playwright)", "Test Case Design", "Bug Tracking", "API Testing", "Scripting"],
+  },
+  "Cyber Security Analyst": {
+    what: "Protects systems and data — finding and fixing vulnerabilities before attackers do.",
+    skills: ["Networking", "Operating Systems", "Vulnerability Assessment", "SIEM Tools", "Cryptography", "Incident Response"],
+  },
+  "Cloud Engineer": {
+    what: "Designs and runs scalable cloud infrastructure with cost and reliability in mind.",
+    skills: ["AWS / Azure / GCP", "IaaS / PaaS", "Networking", "Security", "Cost Optimization", "Infrastructure as Code"],
+  },
+  "Mobile App Developer": {
+    what: "Builds iOS and Android apps users love — from UI to stores to updates.",
+    skills: ["Kotlin / Java / Swift", "React Native / Flutter", "App Lifecycle", "REST APIs", "Offline Storage", "Store Publishing"],
+  },
+  "Product Manager": {
+    what: "Finds what users need and leads a team to build and ship it.",
+    skills: ["Market Research", "PRDs & Prioritization", "Analytics & Metrics", "Stakeholder Management", "Agile / Scrum", "A/B Testing"],
+  },
+  "UI/UX Designer": {
+    what: "Designs intuitive, accessible products — from research and wireframes to polished interfaces.",
+    skills: ["Figma", "User Research", "Wireframing", "Prototyping", "Design Systems", "Usability Testing"],
+  },
+  "Research Analyst": {
+    what: "Distills data and literature into sharp, structured research insights.",
+    skills: ["Data Collection", "Statistical Analysis", "Excel / Python", "Research Writing", "Literature Review", "Critical Thinking"],
+  },
+  "Statistician": {
+    what: "Designs experiments and models data to draw statistically sound conclusions.",
+    skills: ["Probability", "Statistical Inference", "Regression", "Experimental Design", "R / Python", "Data Visualization"],
+  },
+  "Bioinformatics Analyst": {
+    what: "Combines biology with computation to analyse genomic and biomedical data.",
+    skills: ["Python / R", "Genomics Tools (BLAST, Bioconductor)", "Statistics", "Sequence Analysis", "Databases", "Cloud HPC"],
+  },
+  "HR Specialist": {
+    what: "Owns the people side — hiring talent, onboarding them and supporting culture.",
+    skills: ["Sourcing & Recruitment", "Employee Relations", "HRIS", "Onboarding", "Communication", "Employment Law Basics"],
+  },
+  "Operations Manager": {
+    what: "Runs day-to-day operations so teams deliver consistently and efficiently.",
+    skills: ["Process Optimization", "Data Analysis", "Vendor Management", "Supply Chain Basics", "Project Management", "SOP Writing"],
+  },
+  "Sales & Business Development": {
+    what: "Finds, pitches and closes opportunities that grow the business.",
+    skills: ["Lead Generation", "Pitching", "Negotiation", "CRM Management", "Relationship Building", "Prospecting"],
+  },
+  "Digital Marketing Specialist": {
+    what: "Grows audiences and revenue through performance marketing and content.",
+    skills: ["SEO", "Google / Meta Ads", "Content Marketing", "Analytics", "Email Marketing", "Social Media"],
+  },
+  "Management Consultant": {
+    what: "Solves complex business problems for clients with structured, hypothesis-driven analysis.",
+    skills: ["Case Frameworks", "Data Analysis", "Excel Modeling", "Slide Writing", "Stakeholder Communication", "Problem Structuring"],
+  },
+  "Supply Chain Analyst": {
+    what: "Optimises how products move — from demand planning to delivery.",
+    skills: ["Demand Planning", "SQL / Excel", "Inventory Optimization", "Data Analysis", "ERP Basics", "Logistics"],
+  },
+  "Investment Banker": {
+    what: "Advises on deals — financing, acquisitions and valuations.",
+    skills: ["Financial Modeling", "Valuation (DCF / comps)", "Excel / M&A", "Pitch Books", "Industry Research", "Deadline Discipline"],
+  },
+  "Business Development Manager": {
+    what: "Builds partnerships and revenue deals that scale the company.",
+    skills: ["Market Research", "Partnership Strategy", "Negotiation", "Pitching", "Pipeline Management", "Cross-functional Leadership"],
+  },
+  "Research Engineer": {
+    what: "Bridges research and software — turning new ideas into working systems.",
+    skills: ["Python", "Deep Learning", "Software Engineering", "Experimentation", "MLOps Basics", "Reproducibility"],
+  },
+  "Embedded Systems Engineer": {
+    what: "Programs the hardware inside devices — from microcontrollers to firmware.",
+    skills: ["C / C++", "Microcontrollers", "RTOS", "Circuit Basics", "Sensors & Actuators", "UART / SPI / I2C"],
+  },
+  "Research Scientist": {
+    what: "Advances the field — designing studies, experiments and analyses.",
+    skills: ["Deep Research", "Python / Stats", "Experimental Design", "Paper Writing", "Data Analysis", "Presentation"],
+  },
+  "Finance Analyst": {
+    what: "Analyses financials and models outcomes to guide business decisions.",
+    skills: ["Financial Modeling", "Excel / VBA", "Financial Statements", "Valuation Basics", "SQL", "PowerPoint Storytelling"],
+  },
+  "Marketing Analyst": {
+    what: "Measures campaigns and customers to grow performance with data.",
+    skills: ["Google Analytics", "Excel / SQL", "Campaign Metrics", "Dashboards", "Content & SEO Basics", "A/B Testing"],
+  },
+  "Business Analyst": {
+    what: "Bridges business and tech — turning requirements into solutions.",
+    skills: ["SQL", "Excel / BI", "Requirements Gathering", "Process Mapping", "Stakeholder Communication", "Data Interpretation"],
+  },
+};
+
+// Real-world market data for each career — entry-level figures, demand outlook,
+// first job titles and growth path. Used in the onboarding career explorer.
+export const CAREER_MARKET: Record<string, { salary: string; demand: string; jobTitles: string[]; trajectory: string }> = {
+  "Software Developer": { salary: "₹3–8 LPA", demand: "Very High", jobTitles: ["Software Engineer", "Application Developer", "Platform Engineer (entry)"], trajectory: "Software Developer → Senior Engineer → Tech Lead / EM" },
+  "Frontend Developer": { salary: "₹3–7 LPA", demand: "Very High", jobTitles: ["Frontend Engineer", "UI Developer", "React Developer"], trajectory: "Frontend → Senior Frontend → Frontend Lead / UI Engineer" },
+  "Backend Developer": { salary: "₹4–9 LPA", demand: "Very High", jobTitles: ["Backend Engineer", "API Developer", "Java / Node Developer"], trajectory: "Backend → Senior Backend → Architect / Backend Lead" },
+  "Full-Stack Developer": { salary: "₹4–10 LPA", demand: "Very High", jobTitles: ["Full-Stack Engineer", "MERN / MEAN Developer", "Product Engineer"], trajectory: "Full-Stack → Senior → Tech Lead / Product Engineer" },
+  "Data Analyst": { salary: "₹3–7 LPA", demand: "Very High", jobTitles: ["Data Analyst", "Business Intelligence Analyst", "MIS Analyst"], trajectory: "Analyst → Senior Analyst → Analytics Lead" },
+  "Data Scientist": { salary: "₹5–12 LPA", demand: "High", jobTitles: ["Data Scientist", "ML Engineer (entry)", "Applied Scientist"], trajectory: "Data Scientist → Senior → Principal / Lead" },
+  "AI/ML Engineer": { salary: "₹6–14 LPA", demand: "Very High", jobTitles: ["ML Engineer", "NLP Engineer", "AI Engineer"], trajectory: "ML Engineer → Senior → Lead / Applied AI Engineer" },
+  "DevOps Engineer": { salary: "₹4–10 LPA", demand: "High", jobTitles: ["DevOps Engineer", "Cloud Automation Engineer", "SRE (entry)"], trajectory: "DevOps → Senior → SRE / Platform Lead" },
+  "QA / Test Engineer": { salary: "₹3–6 LPA", demand: "Growing", jobTitles: ["QA Engineer", "SDET", "Test Analyst"], trajectory: "Test Engineer → SDET → QA Lead" },
+  "Cyber Security Analyst": { salary: "₹4–9 LPA", demand: "Very High", jobTitles: ["Security Analyst", "SOC Analyst", "GRC Analyst"], trajectory: "Analyst → Senior Analyst → Security Lead / Architect" },
+  "Cloud Engineer": { salary: "₹4–10 LPA", demand: "High", jobTitles: ["Cloud Engineer", "Platform Engineer", "Infrastructure Engineer"], trajectory: "Cloud Engineer → Senior → Cloud Architect" },
+  "Mobile App Developer": { salary: "₹3–8 LPA", demand: "High", jobTitles: ["Android Developer", "iOS Developer", "Flutter Developer"], trajectory: "Mobile Dev → Senior → Tech Lead" },
+  "Product Manager": { salary: "₹6–15 LPA", demand: "High", jobTitles: ["Associate Product Manager", "Product Analyst", "APM (early career)"], trajectory: "APM → Product Manager → Senior PM / GPM" },
+  "UI/UX Designer": { salary: "₹3–8 LPA", demand: "High", jobTitles: ["UI Designer", "UX Designer", "Product Designer"], trajectory: "UX Designer → Senior → Design Lead / Head of Design" },
+  "Research Analyst": { salary: "₹3–6 LPA", demand: "Growing", jobTitles: ["Research Analyst", "Market Research Analyst", "Equity Research Analyst"], trajectory: "Analyst → Senior Analyst → Research Lead" },
+  "Statistician": { salary: "₹4–8 LPA", demand: "Growing", jobTitles: ["Statistician", "Quant Analyst", "Data Scientist (statistics)"], trajectory: "Statistician → Senior → Principal Statistician" },
+  "Bioinformatics Analyst": { salary: "₹4–8 LPA", demand: "Niche", jobTitles: ["Bioinformatics Analyst", "Computational Biologist", "Genomics Analyst"], trajectory: "Analyst → Senior → Research Scientist" },
+  "HR Specialist": { salary: "₹3–6 LPA", demand: "Growing", jobTitles: ["HR Executive", "Recruitment Specialist", "HR Generalist"], trajectory: "HR Specialist → HR Manager → HR Business Partner" },
+  "Operations Manager": { salary: "₹5–12 LPA", demand: "High", jobTitles: ["Operations Executive", "Operations Manager", "Process Lead"], trajectory: "Ops Executive → Manager → Director / COO track" },
+  "Sales & Business Development": { salary: "₹3–8 LPA", demand: "High", jobTitles: ["SDR", "Business Development Executive", "Account Executive"], trajectory: "SDR → Account Executive → Sales Manager" },
+  "Digital Marketing Specialist": { salary: "₹3–7 LPA", demand: "Very High", jobTitles: ["Digital Marketing Executive", "SEO / SEM Specialist", "Performance Marketer"], trajectory: "Specialist → Manager → Growth Lead" },
+  "Management Consultant": { salary: "₹8–16 LPA", demand: "High", jobTitles: ["Business Analyst (consulting)", "Associate Consultant", "Analyst"], trajectory: "Analyst → Consultant → Engagement Manager" },
+  "Supply Chain Analyst": { salary: "₹4–8 LPA", demand: "Growing", jobTitles: ["Supply Chain Analyst", "Demand Planner", "Logistics Analyst"], trajectory: "Analyst → Planner → Operations Manager" },
+  "Investment Banker": { salary: "₹10–20 LPA", demand: "Niche", jobTitles: ["IB Analyst", "Equity Research Analyst", "Deal Analyst"], trajectory: "Analyst → Associate → VP" },
+  "Business Development Manager": { salary: "₹5–12 LPA", demand: "High", jobTitles: ["BDM", "Partnership Manager", "Corporate Sales Executive"], trajectory: "BD Executive → BDM → Head of Business Development" },
+  "Research Engineer": { salary: "₹6–14 LPA", demand: "High", jobTitles: ["Research Engineer", "Applied ML Engineer", "Deep Learning Engineer"], trajectory: "Engineer → Senior → Lead / Principal Researcher" },
+  "Embedded Systems Engineer": { salary: "₹4–9 LPA", demand: "Growing", jobTitles: ["Embedded Engineer", "Firmware Engineer", "SoC / VLSI Engineer"], trajectory: "Embedded Engineer → Senior → Systems Architect" },
+  "Research Scientist": { salary: "₹6–15 LPA", demand: "Niche", jobTitles: ["Research Scientist", "R&D Scientist", "Postdoc / PhD-track"], trajectory: "Researcher → Senior → Principal Scientist" },
+  "Finance Analyst": { salary: "₹4–9 LPA", demand: "High", jobTitles: ["Finance Analyst", "FP&A Analyst", "Credit Analyst"], trajectory: "Analyst → Senior → Finance Manager" },
+  "Marketing Analyst": { salary: "₹4–8 LPA", demand: "High", jobTitles: ["Marketing Analyst", "Growth Analyst", "CRM Analyst"], trajectory: "Analyst → Senior → Marketing Manager" },
+  "Business Analyst": { salary: "₹4–9 LPA", demand: "Very High", jobTitles: ["Business Analyst", "IT / Functional Analyst", "Consulting Analyst"], trajectory: "Analyst → Senior → Product / Program Manager" },
+};
+
+export const DEMAND_RANK: Record<string, number> = {
+  "Very High": 0,
+  High: 1,
+  Growing: 2,
+  Niche: 3,
+};
+
 export const CAREER_ROLES_BY_DEGREE: Record<(typeof DEGREES)[number], string[]> = {
   "B.Tech": [
     "Software Developer",
@@ -504,7 +676,7 @@ export const READINESS_DIMENSIONS = [
   { key: "aptitude", label: "Aptitude / Assessments", weight: 10 },
   { key: "interview", label: "Interview Readiness", weight: 15 },
   { key: "consistency", label: "Consistency / Execution", weight: 5 },
-  { key: "careerActivities", label: "Hackathons / Quizzes / Events", weight: 5 },
+  { key: "careerActivities", label: "Hackathons / Events / Opportunities", weight: 5 },
   { key: "roleReadiness", label: "Role-Specific Readiness", weight: 5 },
 ] as const;
 
@@ -524,8 +696,7 @@ export const OPPORTUNITY_PLATFORMS = [
 export const INTERVIEW_TYPES = ["TECHNICAL", "HR", "BEHAVIORAL"] as const;
 export type InterviewType = (typeof INTERVIEW_TYPES)[number];
 
-export const APPLICATION_STATUSES = ["SAVED", "APPLIED", "INTERVIEW", "OFFER", "REJECTED", "COMPLETED"] as const;
-export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
+
 
 export function formatInterviewType(type: string): string {
   const map: Record<string, string> = {

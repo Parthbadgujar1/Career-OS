@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const { user, profile } = await requireStudentProfile();
 
-  const [skills, assessments, tasks, reports, resumes, projects, submissions, quizResults, participations, interviews, roadmap, opportunityActions, notifications] =
+  const [skills, assessments, tasks, reports, resumes, projects, submissions, participations, interviews, roadmap, opportunityActions, notifications] =
     await Promise.all([
       prisma.studentSkill.findMany({ where: { studentId: profile.id }, include: { skill: true } }),
       prisma.assessment.findMany({ where: { studentId: profile.id } }),
@@ -16,7 +16,6 @@ export async function GET() {
       prisma.resume.findMany({ where: { studentId: profile.id } }),
       prisma.project.findMany({ where: { studentId: profile.id } }),
       prisma.codingSubmission.findMany({ where: { studentId: profile.id }, include: { problem: true } }),
-      prisma.quizResult.findMany({ where: { studentId: profile.id }, include: { quiz: true } }),
       prisma.eventParticipation.findMany({ where: { studentId: profile.id }, include: { event: true } }),
       prisma.mockInterview.findMany({ where: { studentId: profile.id } }),
       prisma.roadmap.findUnique({ where: { studentId: profile.id }, include: { items: true } }),
@@ -65,7 +64,6 @@ export async function GET() {
     resumes,
     projects,
     codingSubmissions: submissions.map((s) => ({ title: s.problem.title, status: s.status, createdAt: s.createdAt })),
-    quizResults: quizResults.map((q) => ({ title: q.quiz.title, score: q.score, maxScore: q.maxScore, createdAt: q.createdAt })),
     eventParticipations: participations.map((p) => ({ title: p.event.title, status: p.status, createdAt: p.createdAt })),
     mockInterviews: interviews,
     roadmap,

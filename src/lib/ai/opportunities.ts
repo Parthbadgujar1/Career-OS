@@ -23,23 +23,12 @@ export interface OpportunitySuggestionResult {
   certifications: PlatformSuggestion[];
   openSource: PlatformSuggestion[];
   competitions: PlatformSuggestion[];
-  reminders: ProfileReminder[];
   summary: string;
-}
-
-export interface ProfileReminder {
-  type: "RESUME" | "LINKEDIN" | "GITHUB" | "PROJECT" | "SKILL" | "APPLICATION";
-  title: string;
-  description: string;
-  priority: "HIGH" | "MEDIUM" | "LOW";
-  actionUrl: string;
-  actionLabel: string;
-  lastUpdated?: string;
 }
 
 /**
  * Generate AI-powered platform suggestions based on student profile.
- * Instead of listing static opportunities, suggest WHERE to apply.
+ * Instead of listing static opportunities, suggest WHERE to look.
  */
 export async function suggestOpportunities(profile: {
   degree: string;
@@ -51,8 +40,6 @@ export async function suggestOpportunities(profile: {
   githubUrl?: string | null;
   linkedinUrl?: string | null;
   projectsCount: number;
-  applicationsCount: number;
-  resumeCount: number;
 }): Promise<OpportunitySuggestionResult> {
   const { object } = await generateWithFailover(
     (model) =>
@@ -131,17 +118,6 @@ export async function suggestOpportunities(profile: {
               isFree: z.boolean(),
             })
           ),
-          reminders: z.array(
-            z.object({
-              type: z.enum(["RESUME", "LINKEDIN", "GITHUB", "PROJECT", "SKILL", "APPLICATION"]),
-              title: z.string(),
-              description: z.string(),
-              priority: z.enum(["HIGH", "MEDIUM", "LOW"]),
-              actionUrl: z.string(),
-              actionLabel: z.string(),
-              lastUpdated: z.string().optional(),
-            })
-          ),
           summary: z.string(),
         }),
         prompt: `You are a career opportunity advisor for Indian college students. Based on the student's profile, suggest SPECIFIC platforms and websites where they should actively look for opportunities.
@@ -156,8 +132,6 @@ Student Profile:
 - GitHub: ${profile.githubUrl || "Not linked"}
 - LinkedIn: ${profile.linkedinUrl || "Not linked"}
 - Projects: ${profile.projectsCount}
-- Applications sent: ${profile.applicationsCount}
-- Resumes uploaded: ${profile.resumeCount}
 
 For each category, suggest 3-5 SPECIFIC platforms with real URLs:
 
@@ -167,14 +141,6 @@ QUIZ/CODING PRACTICE: Suggest GeeksforGeeks, HackerRank, LeetCode, CodeChef, etc
 CERTIFICATIONS: Suggest free certifications from Google, Microsoft, AWS, Coursera, freeCodeCamp, etc. relevant to their target role.
 OPEN SOURCE: Suggest GitHub trending, Google Summer of Code, Apache projects, specific repos matching their skills.
 COMPETITIONS: Suggest Kaggle, coding competitions, case competitions for their domain.
-
-Also generate PROFILE REMINDERS based on what's missing:
-- If resumeCount is 0 → remind to upload resume (HIGH priority)
-- If linkedinUrl is empty → remind to set up LinkedIn (HIGH priority)
-- If githubUrl is empty → remind to set up GitHub (MEDIUM priority)
-- If projectsCount is 0 → remind to add projects (HIGH priority)
-- If skills is empty → remind to complete assessment (HIGH priority)
-- If applicationsCount < 3 → encourage applying (MEDIUM priority)
 
 The summary should be a motivational 2-3 sentence overview.`,
         temperature: 0.6,

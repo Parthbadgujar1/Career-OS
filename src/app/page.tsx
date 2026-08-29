@@ -93,7 +93,7 @@ const JOURNEY = [
   {
     when: "Day 1",
     title: "Onboard & assess",
-    text: "Degree, branch, year, skills, target role and weekly time. A 4-question baseline quiz and self-rating map where you stand.",
+    text: "Your current course, target career, interests and daily hours. An adaptive AI assessment grades your skills against your goal.",
     icon: CheckCircle2,
     gradient: "from-emerald-400 to-teal-500",
   },
@@ -135,14 +135,14 @@ const JOURNEY = [
 ];
 
 const PHASES = [
-  { name: "Assess", label: "Phase 1 of 4", text: "Baseline skills, quiz and profile audit create your starting evidence.", icon: Gauge, color: "text-emerald-600 bg-emerald-50" },
+  { name: "Assess", label: "Phase 1 of 4", text: "AI skill assessment and profile audit create your starting evidence.", icon: Gauge, color: "text-emerald-600 bg-emerald-50" },
   { name: "Plan", label: "Phase 2 of 4", text: "The engine maps the exact skills, projects and milestones for your goal.", icon: Map, color: "text-blue-600 bg-blue-50" },
   { name: "Execute", label: "Phase 3 of 4", text: "Daily tasks across learning, coding, projects, profiles and practice.", icon: ListChecks, color: "text-violet-600 bg-violet-50" },
   { name: "Review", label: "Phase 4 of 4", text: "Weekly reports detect weak areas and regenerate the next plan.", icon: RefreshCw, color: "text-amber-600 bg-amber-50" },
 ];
 
 const MODULES = [
-  { title: "AI Onboarding & Assessment", text: "Degree, interests and baseline quiz produce your initial readiness score and gap analysis.", icon: Sparkles, gradient: "from-violet-500 to-purple-600" },
+  { title: "AI Onboarding & Assessment", text: "Your current course, target career, interests and daily hours produce your initial readiness score and gap analysis.", icon: Sparkles, gradient: "from-violet-500 to-purple-600" },
   { title: "Personalized Roadmap", text: "A role-specific 12-week skill tree with prerequisites that adapts to your performance.", icon: Map, gradient: "from-blue-500 to-cyan-500" },
   { title: "Daily AI To-Do System", text: "Learning, coding, project, profile and opportunity tasks with automatic rollover.", icon: CalendarCheck, gradient: "from-emerald-500 to-teal-500" },
   { title: "Resume Builder & AI Review", text: "ATS-oriented analysis, missing-skill detection and role-specific suggestions.", icon: FileText, gradient: "from-amber-500 to-orange-500" },
@@ -151,7 +151,7 @@ const MODULES = [
   { title: "Project Engine", text: "Skill-gap-driven project picks with milestones that become resume evidence.", icon: FolderGit2, gradient: "from-rose-500 to-pink-600" },
   { title: "Coding Practice", text: "Daily problems on your weak topics with consistency and improvement analytics.", icon: Code2, gradient: "from-cyan-500 to-blue-600" },
   { title: "Placement Preparation", text: "Aptitude, DSA, technical subjects, MCQs, HR prep and company-specific plans.", icon: Target, gradient: "from-orange-500 to-red-500" },
-  { title: "Quizzes, Hackathons & Events", text: "Topic quizzes, competition discovery, participation tracking and an achievements portfolio.", icon: Trophy, gradient: "from-yellow-500 to-amber-500" },
+  { title: "Hackathons & Events", text: "Competition discovery, participation tracking and an achievements portfolio.", icon: Trophy, gradient: "from-yellow-500 to-amber-500" },
   { title: "Opportunity Gateway", text: "Smart redirection to Internshala, LinkedIn, Naukri, Indeed and Unstop — with context.", icon: ExternalLink, gradient: "from-indigo-500 to-violet-500" },
   { title: "Free Interview System", text: "AI mock technical and HR interviews with scores, weak areas and next practice.", icon: Mic2, gradient: "from-pink-500 to-rose-500" },
 ];

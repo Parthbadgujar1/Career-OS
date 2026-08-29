@@ -18,6 +18,8 @@ export interface EventRow {
   location: string | null;
   url: string | null;
   registered: boolean;
+  recommended?: boolean;
+  matchReason?: string | null;
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -50,22 +52,32 @@ export function EventsPanel({ events }: { events: EventRow[] }) {
     });
   };
 
+  const sorted = [...events].sort((a, b) => Number(Boolean(b.recommended)) - Number(Boolean(a.recommended)));
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {events.map((event) => (
-        <Card key={event.id} className="animate-slide-in-up hover:shadow-lg transition-shadow">
+      {sorted.map((event) => (
+        <Card key={event.id} className={`animate-slide-in-up hover:shadow-lg transition-shadow ${event.recommended ? "border-indigo-300 shadow-sm" : ""}`}>
           <CardHeader>
             <div className="flex items-start justify-between">
               <div>
-                <Badge className={TYPE_COLORS[event.type] ?? "bg-slate-100 text-slate-700"}>
-                  {TYPE_LABELS[event.type] ?? event.type}
-                </Badge>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Badge className={TYPE_COLORS[event.type] ?? "bg-slate-100 text-slate-700"}>
+                    {TYPE_LABELS[event.type] ?? event.type}
+                  </Badge>
+                  {event.recommended && (
+                    <Badge variant="indigo">Recommended for you</Badge>
+                  )}
+                </div>
                 <CardTitle className="mt-2">{event.title}</CardTitle>
               </div>
               {event.registered && <CheckCircle className="h-5 w-5 text-emerald-600 mt-1" />}
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
+            {event.matchReason && event.recommended && (
+              <p className="text-xs font-medium text-indigo-600">{event.matchReason}</p>
+            )}
             {event.description && (
               <p className="text-sm text-slate-500 leading-relaxed line-clamp-2">{event.description}</p>
             )}

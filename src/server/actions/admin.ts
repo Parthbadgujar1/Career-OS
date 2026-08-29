@@ -30,6 +30,41 @@ export async function assignMentorAction(studentId: string, mentorId: string) {
   revalidatePath("/app/mentor");
 }
 
+export async function updateMentorProfileAction(mentorUserId: string, formData: FormData) {
+  await requireAdmin();
+
+  const mentor = await prisma.user.findFirst({
+    where: { id: mentorUserId, role: "MENTOR" },
+    select: { id: true },
+  });
+  if (!mentor) return;
+
+  const roles = String(formData.get("expertiseRoles") ?? "").split(",").map((r) => r.trim()).filter(Boolean);
+  const industries = String(formData.get("expertiseIndustries") ?? "").split(",").map((i) => i.trim()).filter(Boolean);
+  const years = Number(formData.get("yearsExperience")) || 0;
+  const bio = String(formData.get("bio") ?? "").trim() || null;
+
+  await prisma.mentorProfile.upsert({
+    where: { userId: mentorUserId },
+    create: {
+      userId: mentorUserId,
+      expertiseRoles: roles.length > 0 ? JSON.stringify(roles) : null,
+      expertiseIndustries: industries.length > 0 ? JSON.stringify(industries) : null,
+      yearsExperience: years,
+      bio,
+    },
+    update: {
+      expertiseRoles: roles.length > 0 ? JSON.stringify(roles) : null,
+      expertiseIndustries: industries.length > 0 ? JSON.stringify(industries) : null,
+      yearsExperience: years,
+      bio,
+    },
+  });
+
+  revalidatePath("/admin/mentors");
+  revalidatePath("/app/mentor");
+}
+
 export async function createOpportunityAction(formData: FormData) {
   await requireAdmin();
 
@@ -88,6 +123,8 @@ export async function createEventAction(formData: FormData) {
   const endsRaw = String(formData.get("endsAt") ?? "").trim();
   const location = String(formData.get("location") ?? "").trim() || null;
   const url = String(formData.get("url") ?? "").trim() || null;
+  const focusRolesRaw = String(formData.get("focusRoles") ?? "").trim();
+  const focusIndustriesRaw = String(formData.get("focusIndustries") ?? "").trim();
 
   if (!title || !type || !startsRaw) return;
 
@@ -95,6 +132,9 @@ export async function createEventAction(formData: FormData) {
   if (Number.isNaN(startsAt.getTime())) return;
 
   const endsAt = endsRaw ? new Date(endsRaw) : null;
+
+  const focusRoles = focusRolesRaw.split(",").map((t) => t.trim()).filter(Boolean);
+  const focusIndustries = focusIndustriesRaw.split(",").map((t) => t.trim()).filter(Boolean);
 
   await prisma.event.create({
     data: {
@@ -105,6 +145,8 @@ export async function createEventAction(formData: FormData) {
       endsAt: endsAt && !Number.isNaN(endsAt.getTime()) ? endsAt : null,
       location,
       url,
+      focusRoles: focusRoles.length > 0 ? JSON.stringify(focusRoles) : null,
+      focusIndustries: focusIndustries.length > 0 ? JSON.stringify(focusIndustries) : null,
     },
   });
 

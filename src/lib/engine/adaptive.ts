@@ -3,7 +3,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 
 /**
  * Computes the student's per-category proficiency (0-100) and overall level band.
- * Data sources: assessments, quiz results, coding submissions, self-ratings,
+ * Data sources: assessments, coding submissions, self-ratings,
  * progress tests, and projects.
  */
 export interface CategoryProficiency {
@@ -14,7 +14,7 @@ export interface CategoryProficiency {
   aptitude: number; // APTITUDE + COMMUNICATION assessment scores
   interview: number; // mock interview scores
   consistency: number; // streak + task completion rate
-  careerActivities: number; // quiz results + event participations
+  careerActivities: number; // event participations + opportunity actions
   roleReadiness: number; // blended average of coreSkills + coding + projects (role-specific)
 }
 
@@ -83,17 +83,18 @@ export interface ComputeResult {
  * Computes proficiency scores from the student's actual activity data.
  */
 export async function computeProficiency(prisma: PrismaClient, studentId: string): Promise<ComputeResult> {
-  const [assessments, quizResults, codingSubs, projects, projectRecs, interviews, snapshots, progressTests, profile] =
+  const [assessments, codingSubs, projects, projectRecs, interviews, snapshots, progressTests, profile, participations, opportunityActions] =
     await Promise.all([
       prisma.assessment.findMany({ where: { studentId } }),
-      prisma.quizResult.findMany({ where: { studentId } }),
       prisma.codingSubmission.findMany({ where: { studentId } }),
       prisma.project.findMany({ where: { studentId } }),
       prisma.projectRecommendation.findMany({ where: { studentId } }),
       prisma.mockInterview.findMany({ where: { studentId } }),
       prisma.readinessSnapshot.findMany({ where: { studentId }, orderBy: { createdAt: "desc" }, take: 1 }),
       prisma.progressTestAttempt.findMany({ where: { studentId } }),
-      prisma.studentProfile.findUnique({ where: { id: studentId }, select: { currentStreak: true, weeklyHours: true, onboardedAt: true } }),
+      prisma.studentProfile.findUnique({ where: { id: studentId }, select: { currentStreak: true, dailyHours: true, onboardedAt: true } }),
+      prisma.eventParticipation.findMany({ where: { studentId } }),
+      prisma.opportunityAction.findMany({ where: { studentId } }),
     ]);
 
   // Core skills: latest assessment per type, averaged
@@ -155,11 +156,10 @@ export async function computeProficiency(prisma: PrismaClient, studentId: string
     (weekTasks.length > 0 ? (completed / weekTasks.length) * 50 : 25) // completion rate up to 50%
   ));
 
-  // Career activities: quizzes + events
-  const quizScore = quizResults.length > 0
-    ? (quizResults.reduce((s, q) => s + q.score, 0) / quizResults.reduce((s, q) => s + q.maxScore, 0)) * 100
-    : 0;
-  const careerActivities = Math.round(Math.min(100, quizScore + (interviews.length * 5)));
+  // Career activities: events + saved/applied opportunities + interviews
+  const eventActivity = participations.length > 0 ? 60 : 0;
+  const opportunityActivity = Math.min(40, opportunityActions.length * 10);
+  const careerActivities = Math.round(Math.min(100, eventActivity + opportunityActivity + (interviews.length * 5)));
 
   // Role readiness: weighted blend of core + coding + projects
   const roleReadiness = Math.round(coreSkills * 0.4 + coding * 0.3 + projectsScore * 0.3);

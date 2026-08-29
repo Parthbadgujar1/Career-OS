@@ -2,6 +2,7 @@ import "server-only";
 import { generateObject } from "ai";
 import { z } from "zod/v4";
 import { generateWithFailover } from "@/lib/ai/client";
+import { careerContextFor } from "@/lib/careers";
 
 // ── Adaptive Skill Assessment ─────────────────────────────────────────────
 
@@ -43,6 +44,7 @@ export async function generateInitialQuestions(profile: {
   targetRole: string;
   year: string;
 }): Promise<AssessmentQuestion[]> {
+  const career = await careerContextFor(profile);
   const { object } = await generateWithFailover(
     (model) =>
       generateObject({
@@ -67,9 +69,12 @@ Specialization: ${profile.specialization}
 Target Role: ${profile.targetRole}
 Year: ${profile.year}
 
+Career profile context:
+${career}
+
 The questions should:
 1. Start with EASY difficulty to establish a baseline
-2. Cover the key skills needed for their specialization and target role
+2. Cover the key skills needed for their target career (weighted toward the priority skill areas above)
 3. Be practical and scenario-based where possible
 4. Test conceptual understanding, not just definitions
 5. Include a mix of skill areas relevant to their path
@@ -104,6 +109,7 @@ export async function generateFollowUpQuestions(profile: {
   skillArea: string;
   difficulty: string;
 }[]): Promise<AssessmentQuestion[]> {
+  const career = await careerContextFor(profile);
   const weakAreas = previousAnswers
     .filter((a) => !a.correct)
     .map((a) => `${a.skillArea} (${a.topic})`);
@@ -136,6 +142,9 @@ Student Profile:
 - Specialization: ${profile.specialization}
 - Target Role: ${profile.targetRole}
 - Year: ${profile.year}
+
+Career profile context:
+${career}
 
 Previous Round Results:
 - Weak areas (got wrong): ${weakAreas.length > 0 ? weakAreas.join(", ") : "None — all correct!"}
@@ -173,6 +182,7 @@ export async function gradeSkillsFromResponses(profile: {
   skillArea: string;
   difficulty: string;
 }[]): Promise<AssessmentResult> {
+  const career = await careerContextFor(profile);
   const { object } = await generateWithFailover(
     (model) =>
       generateObject({
@@ -200,6 +210,9 @@ Student Profile:
 - Specialization: ${profile.specialization}
 - Target Role: ${profile.targetRole}
 - Year: ${profile.year}
+
+Career profile context:
+${career}
 
 Assessment Responses (${allAnswers.length} questions total):
 ${allAnswers.map((a) => `- [${a.correct ? "CORRECT" : "WRONG"}] ${a.skillArea}/${a.topic} (${a.difficulty}): "${a.question}" → Selected option ${a.answered}`).join("\n")}

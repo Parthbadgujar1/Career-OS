@@ -3,8 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge, Progress } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { assignMentorAction } from "@/server/actions/admin";
-import { Users, Mail } from "lucide-react";
+import { Input, Textarea, Label } from "@/components/ui/input";
+import { assignMentorAction, updateMentorProfileAction } from "@/server/actions/admin";
+import { fromJson } from "@/lib/utils";
+import { Users, Mail, Briefcase } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +17,7 @@ export default async function AdminMentorsPage() {
     prisma.user.findMany({
       where: { role: "MENTOR" },
       include: {
+        mentorProfile: true,
         mentorStudents: {
           include: { user: { select: { name: true } } },
           orderBy: { updatedAt: "desc" },
@@ -90,7 +93,46 @@ export default async function AdminMentorsPage() {
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-3">
+              <form action={updateMentorProfileAction.bind(null, m.id)} className="grid gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label htmlFor={`exp-${m.id}`} className="flex items-center gap-1 text-xs text-slate-500">
+                    <Briefcase className="h-3 w-3" /> Expertise areas (comma-separated)
+                  </Label>
+                  <Input
+                    id={`exp-${m.id}`}
+                    name="expertiseRoles"
+                    defaultValue={fromJson<string[]>(m.mentorProfile?.expertiseRoles, []).join(", ")}
+                    placeholder="e.g. Software Developer, Data Analyst"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor={`ind-${m.id}`} className="text-xs text-slate-500">Industries (comma-separated)</Label>
+                  <Input
+                    id={`ind-${m.id}`}
+                    name="expertiseIndustries"
+                    defaultValue={fromJson<string[]>(m.mentorProfile?.expertiseIndustries, []).join(", ")}
+                    placeholder="e.g. Fintech, AI & ML"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor={`yrs-${m.id}`} className="text-xs text-slate-500">Years of experience</Label>
+                  <Input
+                    id={`yrs-${m.id}`}
+                    name="yearsExperience"
+                    type="number"
+                    min={0}
+                    defaultValue={m.mentorProfile?.yearsExperience ?? 0}
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label htmlFor={`bio-${m.id}`} className="text-xs text-slate-500">Bio (used for skill-gap matching)</Label>
+                  <Textarea id={`bio-${m.id}`} name="bio" rows={2} defaultValue={m.mentorProfile?.bio ?? ""} />
+                </div>
+                <div className="sm:col-span-2">
+                  <Button type="submit" variant="outline" size="sm">Save expertise</Button>
+                </div>
+              </form>
               {m.mentorStudents.length === 0 && (
                 <p className="text-sm text-slate-500">No students assigned yet.</p>
               )}

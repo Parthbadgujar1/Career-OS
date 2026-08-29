@@ -11,10 +11,8 @@ import {
   FolderGit2,
   FileText,
   ClipboardCheck,
-  FileQuestion,
   Mic2,
   Calendar,
-  FolderOpen,
   BarChart3,
   Trophy,
   Users,
@@ -56,7 +54,6 @@ const NAV_GROUPS = [
     group: "PRACTICE",
     items: [
       { href: "/app/assessment", label: "Skill Assessment", icon: ClipboardCheck },
-      { href: "/app/quizzes", label: "Quizzes", icon: FileQuestion },
       { href: "/app/progress-test", label: "Progress Tests", icon: Timer },
       { href: "/app/interviews", label: "Mock Interviews", icon: Mic2 },
     ],
@@ -66,7 +63,6 @@ const NAV_GROUPS = [
     items: [
       { href: "/app/opportunities", label: "Discover", icon: Lightbulb },
       { href: "/app/events", label: "Events", icon: Calendar },
-      { href: "/app/applications", label: "Applications", icon: FolderOpen },
       { href: "/app/jd-match", label: "JD Match", icon: FileCheck },
     ],
   },
@@ -141,7 +137,7 @@ export function AppShell({
             CO
           </div>
           <div>
-            <p className="text-sm font-bold leading-none text-slate-900">Career OS</p>
+            <p className="text-sm font-bold leading-none text-slate-900 font-display">Career OS</p>
             <p className="text-[11px] text-slate-400 mt-0.5">Student Dashboard</p>
           </div>
           <button
@@ -184,7 +180,7 @@ export function AppShell({
                         className={cn(
                           "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 active:scale-[0.98]",
                           active
-                            ? "bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100"
+                            ? "bg-gradient-to-r from-indigo-50 via-violet-50 to-transparent text-indigo-700 shadow-sm ring-1 ring-inset ring-indigo-200"
                             : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
                         )}
                         style={{ animationDelay: `${ii * 30}ms` }}
@@ -275,8 +271,8 @@ export function AppShell({
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="hidden items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-50 to-cyan-50 px-3 py-1.5 text-xs font-medium text-indigo-700 border border-indigo-100 sm:flex">
-              <Sparkles className="h-3 w-3" />
+            <div className="hidden items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-50 to-violet-50 px-3 py-1.5 text-xs font-bold text-cyan-700 ring-1 ring-inset ring-violet-200 sm:flex">
+              <Sparkles className="h-3 w-3 text-violet-500" />
               AI-Powered
             </div>
             <div className="flex items-center gap-2">

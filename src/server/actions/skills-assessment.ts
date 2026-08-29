@@ -1,5 +1,7 @@
 "use server";
 
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
 import {
@@ -12,6 +14,20 @@ import { snapshotReadiness } from "@/lib/scoring/readiness";
 import { fromJson } from "@/lib/utils";
 
 // ── Adaptive Assessment Actions ───────────────────────────────────────────
+
+export async function restartAssessmentAction() {
+  const { profile } = await requireStudentProfile();
+
+  await prisma.studentSkill.deleteMany({ where: { studentId: profile.id } });
+  await prisma.studentProfile.update({
+    where: { id: profile.id },
+    data: { assessmentComplete: false },
+  });
+
+  revalidatePath("/app/assessment");
+  revalidatePath("/app");
+  redirect("/app/assessment");
+}
 
 export async function startAssessmentAction(): Promise<
   { ok: true; questions: Array<{ id: string; question: string; options: string[]; topic: string; skillArea: string; difficulty: string }> } | { error: string }

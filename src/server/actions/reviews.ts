@@ -86,7 +86,7 @@ async function runResumeReview(
 
 export async function reviewResumeAction(
   formData: FormData
-): Promise<{ ok: true; atsScore: number; summary: string; content: string; missingSkills: string[]; suggestions: string[]; impactStatements: string[]; sectionAnalysis: Array<{ section: string; status: string; note: string }>; keywordGaps: string[] } | { error: string }> {
+): Promise<{ ok: true; resumeId: string; atsScore: number; summary: string; content: string; missingSkills: string[]; suggestions: string[]; impactStatements: string[]; sectionAnalysis: Array<{ section: string; status: string; note: string }>; keywordGaps: string[] } | { error: string }> {
   const { profile } = await requireStudentProfile();
   const resumeText = (formData.get("resumeText") as string) || "";
   const role = (formData.get("role") as string) || profile.targetRole || "";
@@ -124,6 +124,7 @@ export async function reviewResumeAction(
   revalidatePath("/app/reviews");
   return {
     ok: true,
+    resumeId: resume.id,
     atsScore: result.atsScore,
     summary: result.summary,
     content: result.content,
@@ -137,7 +138,7 @@ export async function reviewResumeAction(
 
 export async function buildResumeAction(
   formData: FormData
-): Promise<{ ok: true; atsScore: number; summary: string } | { error: string }> {
+): Promise<{ ok: true; resumeId: string; atsScore: number; summary: string; content: string; missingSkills: string[]; suggestions: string[]; impactStatements: string[]; sectionAnalysis: Array<{ section: string; status: string; note: string }>; keywordGaps: string[] } | { error: string }> {
   const { user, profile } = await requireStudentProfile();
   const role = (formData.get("role") as string) || profile.targetRole || "";
   const summary = (formData.get("summary") as string) || "";
@@ -173,7 +174,18 @@ export async function buildResumeAction(
 
   await snapshotReadiness(prisma, profile.id);
   revalidatePath("/app/reviews");
-  return { ok: true, atsScore: result.atsScore, summary: result.summary };
+  return {
+    ok: true,
+    resumeId: resume.id,
+    atsScore: result.atsScore,
+    summary: result.summary,
+    content: result.content,
+    missingSkills: result.missingSkills,
+    suggestions: result.suggestions,
+    impactStatements: result.impactStatements,
+    sectionAnalysis: result.sectionAnalysis,
+    keywordGaps: result.keywordGaps,
+  };
 }
 
 export async function reviewProfileAction(

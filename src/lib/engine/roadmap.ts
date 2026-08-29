@@ -1,6 +1,7 @@
 import "server-only";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { generateRoadmap, generateLongTermPlan, type RoadmapInput } from "@/lib/ai/roadmap";
+import { getCareerProfile } from "@/lib/careers";
 
 export type MilestoneCategory = "LEARNING" | "CODING" | "PROJECT" | "PROFILE" | "INTERVIEW" | "OPPORTUNITY";
 
@@ -9,6 +10,7 @@ export interface Milestone {
   title: string;
   description: string;
   category: MilestoneCategory;
+  relevance?: string;
 }
 
 interface RoleTemplate {
@@ -132,7 +134,107 @@ function templateFor(role: string): RoleTemplate | null {
   return TEMPLATES[role] ?? null;
 }
 
-function buildMilestones(t: RoleTemplate, totalWeeks: number): Milestone[] {
+function relevanceFor(category: MilestoneCategory, topic: string, role: string): string {
+  const profile = getCareerProfile(role);
+  const base = profile
+    ? `Relevant to ${role}: ${profile.summary}`
+    : `Relevant to your path toward ${role}.`;
+  const perCategory: Record<MilestoneCategory, string> = {
+    LEARNING:
+      profile && profile.skillAreas.length > 0
+        ? `Builds the "${(profile.skillAreas[0] ?? "core skills").split("_").join(" ")}" foundation that ${role} hiring looks for.`
+        : `Grows the core knowledge ${role} requires.`,
+    CODING:
+      profile && profile.coreSkills.length > 0
+        ? `Strengthens "${profile.coreSkills[0]}" — a skill directly listed for ${role} candidates.`
+        : `Practices the problem-solving skill ${role} interviews test.`,
+    PROJECT:
+      profile && profile.evidence.length > 0
+        ? `Produces portfolio proof: ${profile.evidence[0].toLowerCase()}.`
+        : `Builds a portfolio piece that signals real ability for ${role}.`,
+    PROFILE:
+      profile && profile.evidence.length > 2
+        ? `Makes your resume/LinkedIn reflect exactly what ${role} employers check (${profile.evidence.slice(0, 2).join("; ").toLowerCase()}).`
+        : `Improves how recruiters perceive you for ${role}.`,
+    INTERVIEW: `Converts ${role} knowledge into the structured answers interviews reward.`,
+    OPPORTUNITY:
+      profile && profile.industries.length > 0
+        ? `Surfaces real openings in ${profile.industries.slice(0, 3).join(", ")} — where ${role} roles actually hire.`
+        : `Finds live internships/jobs that match your ${role} goal.`,
+  };
+  return `${perCategory[category]} ${base}`;
+}
+
+function buildGenericMilestones(role: string, totalWeeks: number): Milestone[] {
+  const profile = getCareerProfile(role);
+  const skills = profile?.coreSkills.length ? profile.coreSkills : [profile?.skillAreas[0] ?? "core skills"];
+  const milestones: Milestone[] = [];
+  const focus = profile?.focusDimension ?? "coreSkills";
+  const learnPool = profile?.skillAreas.length ? profile.skillAreas : ["SOFT_SKILLS"];
+  const evidence = profile?.evidence[0] ?? "a role-specific portfolio piece";
+
+  for (let w = 1; w <= totalWeeks; w++) {
+    const area = learnPool[(w - 1) % learnPool.length];
+    const topic = skills[(w - 1) % skills.length];
+    milestones.push({
+      week: w,
+      title: `Learn: ${area.split("_").map(cap).join(" ").toLowerCase()}`,
+      description: `Study the "${area}" foundation for ${role}: a short course, notes and a small worked example.`,
+      category: "LEARNING",
+      relevance: relevanceFor("LEARNING", area, role),
+    });
+    milestones.push({
+      week: w,
+      title: `Practice: ${topic}`,
+      description: `Apply ${topic} with a hands-on exercise or problem set related to ${role}.`,
+      category: "CODING",
+      relevance: relevanceFor("CODING", topic, role),
+    });
+    if (w % 4 === 1 || (w >= 3 && w <= 5)) {
+      milestones.push({
+        week: w,
+        title: `Project: ${cap(evidence)}`,
+        description: `Work toward ${evidence} — the signal that stands out for ${role}.`,
+        category: "PROJECT",
+        relevance: relevanceFor("PROJECT", evidence, role),
+      });
+    }
+    if (w === 6 || w === 10) {
+      milestones.push({
+        week: w,
+        title: `Profile: update resume + LinkedIn for ${role}`,
+        description: `Refresh your resume and LinkedIn to lead with ${focus === "projects" ? "projects and portfolios" : focus === "coreSkills" ? "core skills and certifications" : "relevant experience and evidence"}.`,
+        category: "PROFILE",
+        relevance: relevanceFor("PROFILE", role, role),
+      });
+    }
+    if (w === 8 || w === 11) {
+      milestones.push({
+        week: w,
+        title: `Interview: ${role} skill check`,
+        description: `Mock interview or structured self-test on the ${role} topics covered so far.`,
+        category: "INTERVIEW",
+        relevance: relevanceFor("INTERVIEW", role, role),
+      });
+    }
+    if (w === 4 || w === 9) {
+      milestones.push({
+        week: w,
+        title: `Opportunity: save ${role}-relevant internship/job`,
+        description: "Browse Unstop/Internshala/LinkedIn and save at least one matching opportunity.",
+        category: "OPPORTUNITY",
+        relevance: relevanceFor("OPPORTUNITY", role, role),
+      });
+    }
+  }
+  return milestones.sort((a, b) => a.week - b.week);
+}
+
+function cap(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function buildMilestones(t: RoleTemplate, totalWeeks: number, role: string): Milestone[] {
   const milestones: Milestone[] = [];
   let projectIdx = 0;
   for (let w = 1; w <= totalWeeks; w++) {
@@ -143,12 +245,14 @@ function buildMilestones(t: RoleTemplate, totalWeeks: number): Milestone[] {
       title: `Learn: ${track}`,
       description: `Study ${track} for this week. Follow a short free course, take notes and build a small example.`,
       category: "LEARNING",
+      relevance: relevanceFor("LEARNING", track, role),
     });
     milestones.push({
       week: w,
       title: `Code: ${coding} practice`,
       description: `Solve at least 2 problems on ${coding} on a platform you prefer (LeetCode/HackerRank/GFG).`,
       category: "CODING",
+      relevance: relevanceFor("CODING", coding, role),
     });
     const active = t.projects.filter((p) => p.startWeek <= w && p.endWeek >= w);
     if (active.length > 0) {
@@ -158,6 +262,7 @@ function buildMilestones(t: RoleTemplate, totalWeeks: number): Milestone[] {
         title: `Project: ${p.title}`,
         description: p.description,
         category: "PROJECT",
+        relevance: relevanceFor("PROJECT", p.title, role),
       });
     } else if (projectIdx < t.projects.length && w > t.projects[projectIdx].endWeek) {
       projectIdx++;
@@ -168,7 +273,13 @@ function buildMilestones(t: RoleTemplate, totalWeeks: number): Milestone[] {
   for (const w of profileWeeks) {
     if (w <= totalWeeks) {
       const text = t.profileWork[(w - 1) % t.profileWork.length];
-      milestones.push({ week: w, title: `Profile: ${text}`, description: text, category: "PROFILE" });
+      milestones.push({
+        week: w,
+        title: `Profile: ${text}`,
+        description: text,
+        category: "PROFILE",
+        relevance: relevanceFor("PROFILE", text, role),
+      });
     }
   }
   [8, 11].forEach((w) => {
@@ -178,6 +289,7 @@ function buildMilestones(t: RoleTemplate, totalWeeks: number): Milestone[] {
         title: "Interview: skill check",
         description: "Attempt a mock interview or self-test on topics covered so far.",
         category: "INTERVIEW",
+        relevance: relevanceFor("INTERVIEW", "skill check", role),
       });
     }
   });
@@ -188,6 +300,7 @@ function buildMilestones(t: RoleTemplate, totalWeeks: number): Milestone[] {
         title: "Opportunity: find a relevant event/internship",
         description: "Browse Unstop/Internshala/LinkedIn and save at least one relevant opportunity.",
         category: "OPPORTUNITY",
+        relevance: relevanceFor("OPPORTUNITY", "event/internship", role),
       });
     }
   });
@@ -214,6 +327,7 @@ export async function persistRoadmap(
               title: `Phase ${p.phase}: ${p.title}`,
               description: p.description,
               category: p.focus,
+              relevance: relevanceFor(p.focus as MilestoneCategory, p.title, input.targetRole),
             });
           }
         }
@@ -226,6 +340,7 @@ export async function persistRoadmap(
             title: m.title,
             description: m.description,
             category: m.category as MilestoneCategory,
+            relevance: relevanceFor(m.category as MilestoneCategory, m.title, input.targetRole),
           }));
       }
     } catch (e) {
@@ -236,10 +351,12 @@ export async function persistRoadmap(
   if (milestones.length === 0) {
     const template = templateFor(input.targetRole);
     if (template) {
-      milestones = buildMilestones(template, totalWeeks);
+      milestones = buildMilestones(template, totalWeeks, input.targetRole);
+    } else if (getCareerProfile(input.targetRole)) {
+      milestones = buildGenericMilestones(input.targetRole, totalWeeks);
     } else {
       const generic = templateFor("Software Developer")!;
-      milestones = buildMilestones(generic, totalWeeks).map((m) => ({
+      milestones = buildMilestones(generic, totalWeeks, input.targetRole).map((m) => ({
         ...m,
         title: `[${input.targetRole}] ${m.title}`,
       }));
@@ -269,6 +386,7 @@ export async function persistRoadmap(
           weekNumber: m.week,
           title: m.title,
           description: m.description,
+          relevance: m.relevance ?? null,
           category: m.category,
           order: m.week,
         },
@@ -293,6 +411,7 @@ export async function persistRoadmap(
         weekNumber: m.week,
         title: m.title,
         description: m.description,
+        relevance: m.relevance ?? null,
         category: m.category,
         order: m.week,
       },

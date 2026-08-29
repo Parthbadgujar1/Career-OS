@@ -15,25 +15,25 @@ const COMPANIES = [
     name: "TCS / Wipro / Infosys / HCL",
     sector: "IT Services",
     focus: ["Quantitative aptitude", "Logical reasoning", "Verbal ability", "Technical MCQs (C, OOP, DBMS)", "HR interview"],
-    prep: ["aptitude", "quizzes", "interviews"],
+    prep: ["aptitude", "coding", "interviews"],
   },
   {
     name: "Accenture / Cognizant / Capgemini",
     sector: "IT Consulting",
     focus: ["Aptitude + analytical writing", "Communication & group tasks", "Technical fundamentals", "Mock interviews"],
-    prep: ["aptitude", "quizzes", "interviews"],
+    prep: ["aptitude", "coding", "interviews"],
   },
   {
     name: "Amazon / Google / Microsoft",
     sector: "Product / FAANG",
     focus: ["DSA — arrays, hash maps, trees, DP", "Problem-solving speed", "System design basics", "Behavioral (STAR) rounds"],
-    prep: ["coding", "quizzes", "interviews"],
+    prep: ["coding", "interviews"],
   },
   {
     name: "Flipkart / Swiggy / Zomato",
     sector: "Product / E-commerce",
     focus: ["DSA + SQL", "Low-level & high-level design", "Product sense", "Data-analysis basics"],
-    prep: ["coding", "quizzes", "interviews"],
+    prep: ["coding", "interviews"],
   },
   {
     name: "Deloitte / PwC / EY",
@@ -45,7 +45,7 @@ const COMPANIES = [
     name: "NVIDIA / Intel / Samsung R&D",
     sector: "Semiconductors / R&D",
     focus: ["C/C++ fundamentals", "OS, computer architecture", "DSA", "Puzzles & analytical ability"],
-    prep: ["coding", "quizzes"],
+    prep: ["coding", "interviews"],
   },
 ];
 
@@ -59,7 +59,6 @@ const HR_QUESTIONS = [
 
 const COMPANY_TARGETS: Record<string, string> = {
   coding: "/app/coding",
-  quizzes: "/app/quizzes",
   aptitude: "/app/placement#aptitude",
   interviews: "/app/interviews",
 };
@@ -118,7 +117,7 @@ export default async function PlacementPage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">DSA & technical MCQs</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">Technical practice</h2>
         <div className="grid gap-3 md:grid-cols-2">
           <Link href="/app/coding">
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
@@ -128,11 +127,11 @@ export default async function PlacementPage() {
               </p>
             </div>
           </Link>
-          <Link href="/app/quizzes">
+          <Link href="/app/assessment">
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
-              <p className="font-semibold">Technical Quizzes</p>
+              <p className="font-semibold">AI Skill Assessment</p>
               <p className="mt-1 text-sm text-slate-500">
-                Topic quizzes on SQL, DSA and DBMS that mirror placement MCQ rounds.
+                Adaptive questions that grade your skills against your target career and identify your gaps.
               </p>
             </div>
           </Link>
@@ -157,7 +156,7 @@ export default async function PlacementPage() {
                 {c.prep.map((p) => (
                   <Link key={p} href={COMPANY_TARGETS[p]}>
                     <Button size="sm" variant="outline">
-                      {p === "aptitude" ? "Aptitude" : p === "coding" ? "Coding" : p === "quizzes" ? "Quizzes" : "Interviews"}
+                      {p === "aptitude" ? "Aptitude" : p === "coding" ? "Coding" : "Interviews"}
                     </Button>
                   </Link>
                 ))}

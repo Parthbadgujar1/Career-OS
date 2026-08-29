@@ -1,7 +1,12 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { getOpportunitySuggestionsAction } from "@/server/actions/opportunities";
+import { useState, useRef, useEffect } from "react";
+import {
+  getOpportunitySuggestionsAction,
+  getOpportunitySuggestionsStatusAction,
+  refreshOpportunitySuggestionsAction,
+  type OpportunityLoadResult,
+} from "@/server/actions/opportunities";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,13 +18,11 @@ import {
   GraduationCap,
   GitBranch,
   Medal,
-  Bell,
   AlertTriangle,
   Loader2,
   RefreshCw,
   Sparkles,
 } from "lucide-react";
-import Link from "next/link";
 
 interface PlatformSuggestion {
   platform: string;
@@ -39,14 +42,6 @@ interface OpportunityData {
   certifications: PlatformSuggestion[];
   openSource: PlatformSuggestion[];
   competitions: PlatformSuggestion[];
-  reminders: Array<{
-    type: string;
-    title: string;
-    description: string;
-    priority: string;
-    actionUrl: string;
-    actionLabel: string;
-  }>;
   summary: string;
 }
 
@@ -59,46 +54,102 @@ const CATEGORY_CONFIG: Record<string, { icon: typeof Briefcase; label: string; c
   COMPETITION: { icon: Medal, label: "Competitions", color: "text-rose-600" },
 };
 
-const PRIORITY_COLORS: Record<string, string> = {
-  HIGH: "bg-rose-100 text-rose-700 border-rose-200",
-  MEDIUM: "bg-amber-100 text-amber-700 border-amber-200",
-  LOW: "bg-slate-100 text-slate-600 border-slate-200",
-};
-
-export function OpportunitiesPanel({ initialData }: { initialData: OpportunityData | null }) {
-  const [data, setData] = useState<OpportunityData | null>(initialData);
+export function OpportunitiesPanel({ initialData }: { initialData: OpportunityLoadResult | null }) {
+  const [data, setData] = useState<OpportunityData | null>(
+    initialData?.status === "ready" ? initialData.data : null
+  );
+  const [generatedAt, setGeneratedAt] = useState<string | null>(
+    initialData?.status === "ready" ? initialData.generatedAt : null
+  );
+  const [generating, setGenerating] = useState(initialData?.status === "pending");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchData = () => {
-    setLoading(true);
-    setError(null);
-    getOpportunitySuggestionsAction()
-      .then((result) => { if (mountedRef.current) setData(result); })
-      .catch((e) => { if (mountedRef.current) setError(e instanceof Error ? e.message : "Failed to load suggestions"); })
-      .finally(() => { if (mountedRef.current) setLoading(false); });
+  const clearPoll = () => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
   };
 
-  if (loading) {
+  const refresh = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await refreshOpportunitySuggestionsAction();
+      if (!mountedRef.current) return;
+      if (res.status === "ready") {
+        setData(res.data);
+        setGeneratedAt(res.generatedAt);
+      }
+    } catch (e) {
+      if (mountedRef.current) setError(e instanceof Error ? e.message : "Failed to refresh suggestions");
+    } finally {
+      if (mountedRef.current) setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      clearPoll();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (initialData?.status !== "pending") return;
+    let attempts = 0;
+
+    const tick = async () => {
+      attempts++;
+      const s = await getOpportunitySuggestionsStatusAction();
+      if (!mountedRef.current) return;
+      if (s.status === "ready") {
+        clearPoll();
+        const res = await getOpportunitySuggestionsAction();
+        if (!mountedRef.current) return;
+        if (res.status === "ready") {
+          setData(res.data);
+          setGeneratedAt(res.generatedAt);
+        }
+        setGenerating(false);
+      } else if (s.status === "failed") {
+        clearPoll();
+        setError("AI generation failed. Tap Refresh to try again.");
+        setGenerating(false);
+      } else if (attempts > 40) {
+        clearPoll();
+        setError("This is taking longer than expected. Tap Refresh to try again.");
+        setGenerating(false);
+      }
+    };
+
+    pollRef.current = setInterval(tick, 3000);
+    tick();
+    return clearPoll;
+  }, [initialData?.status]);
+
+  if (generating) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
-        <p className="mt-4 text-sm font-medium text-slate-600">AI is analyzing your profile...</p>
-        <p className="mt-1 text-xs text-slate-400">Finding the best platforms for your career path</p>
+        <p className="mt-4 text-sm font-medium text-slate-600">AI is preparing your personalized opportunities...</p>
+        <p className="mt-1 text-xs text-slate-400">This takes a few seconds — we will show them here as soon as they are ready</p>
       </div>
     );
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <Card className="border-rose-100">
         <CardContent className="flex flex-col items-center py-12">
           <AlertTriangle className="h-8 w-8 text-rose-500" />
           <p className="mt-3 text-sm text-slate-600">{error}</p>
-          <Button variant="outline" onClick={fetchData} className="mt-4">
+          <Button variant="outline" onClick={refresh} disabled={loading} className="mt-4">
             <RefreshCw className="h-4 w-4 mr-2" />
-            Try again
+            Refresh
           </Button>
         </CardContent>
       </Card>
@@ -121,10 +172,15 @@ export function OpportunitiesPanel({ initialData }: { initialData: OpportunityDa
     return acc;
   }, {});
 
-  const reminders = data.reminders || [];
-
   return (
     <div className="space-y-8">
+      {error && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5">
+          <p className="text-xs text-amber-700">{error}</p>
+          <Button variant="outline" size="sm" onClick={() => setError(null)}>Dismiss</Button>
+        </div>
+      )}
+
       <Card className="border-indigo-100 bg-gradient-to-br from-white to-indigo-50/30">
         <CardContent className="p-5">
           <div className="flex items-start gap-3">
@@ -133,37 +189,6 @@ export function OpportunitiesPanel({ initialData }: { initialData: OpportunityDa
           </div>
         </CardContent>
       </Card>
-
-      {reminders.length > 0 && (
-        <section>
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500">
-            <Bell className="h-4 w-4" />
-            Action Items
-          </h2>
-          <div className="grid gap-3 md:grid-cols-2">
-            {reminders.map((r, i) => (
-              <Card key={i} className={`border ${PRIORITY_COLORS[r.priority] ?? PRIORITY_COLORS.LOW}`}>
-                <CardContent className="flex items-start justify-between gap-3 p-4">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm">{r.title}</p>
-                      <Badge variant={r.priority === "HIGH" ? "danger" : r.priority === "MEDIUM" ? "warning" : "secondary"} className="text-[10px]">
-                        {r.priority}
-                      </Badge>
-                    </div>
-                    <p className="mt-1 text-xs text-slate-500">{r.description}</p>
-                  </div>
-                  <Link href={r.actionUrl}>
-                    <Button size="sm" variant="outline" className="shrink-0">
-                      {r.actionLabel}
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-      )}
 
       {Object.entries(groupedByCategory).map(([category, platforms]) => {
         const config = CATEGORY_CONFIG[category] ?? { icon: Briefcase, label: category, color: "text-slate-600" };
@@ -210,9 +235,14 @@ export function OpportunitiesPanel({ initialData }: { initialData: OpportunityDa
         );
       })}
 
-      <div className="flex justify-center pt-4">
-        <Button variant="outline" onClick={fetchData} disabled={loading}>
-          <RefreshCw className="h-4 w-4 mr-2" />
+      <div className="flex flex-col items-center gap-2 pt-4">
+        {generatedAt && (
+          <p className="text-[11px] text-slate-400">
+            Suggestions updated {new Date(generatedAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+          </p>
+        )}
+        <Button variant="outline" onClick={refresh} disabled={loading}>
+          {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
           Refresh Suggestions
         </Button>
       </div>

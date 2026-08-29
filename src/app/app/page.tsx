@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, CalendarCheck, ListTodo, TrendingUp, Sparkles, Target, Map, RefreshCw } from "lucide-react";
+import { ArrowRight, CalendarCheck, ListTodo, TrendingUp, Sparkles, Target, Map, RefreshCw, Brain, ShieldCheck, Layers } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
 import { computeReadiness, readinessLabel } from "@/lib/scoring/readiness";
-import { bumpStreak, ensureWeeklyTasks } from "@/lib/engine/tasks";
+import { bumpStreak, ensureWeeklyTasks, activeRoadmapWeek } from "@/lib/engine/tasks";
 import { READINESS_DIMENSIONS, CATEGORY_LABELS } from "@/lib/constants";
 import { fromJson, formatDate, weekLabel } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,21 +12,16 @@ import { Badge, Progress } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/ui/reveal";
 import { changePathAction } from "@/server/actions/onboarding";
+import { restartAssessmentAction } from "@/server/actions/skills-assessment";
 
 export const dynamic = "force-dynamic";
-
-function currentRoadmapWeek(createdAt: Date, totalWeeks: number) {
-  const now = Date.now();
-  const week = Math.floor((now - createdAt.getTime()) / 86400000 / 7) + 1;
-  return Math.min(totalWeeks, Math.max(1, week));
-}
 
 export default async function OverviewPage() {
   const { profile } = await requireStudentProfile();
 
   if (!profile.onboardedAt) redirect("/app/assessment");
 
-  const [readiness, tasks, latestReport, notifications, roadmap, progressAttempts] = await Promise.all([
+  const [readiness, tasks, latestReport, notifications, roadmap, progressAttempts, skillCount] = await Promise.all([
     computeReadiness(prisma, profile.id),
     ensureWeeklyTasks(prisma, profile.id),
     prisma.weeklyReport.findFirst({
@@ -44,12 +39,13 @@ export default async function OverviewPage() {
       orderBy: { completedAt: "desc" },
       take: 2,
     }),
+    prisma.studentSkill.count({ where: { studentId: profile.id } }),
   ]);
 
   const streak = await bumpStreak(prisma, profile.id);
 
   const pendingCount = tasks.filter((t) => t.status === "PENDING").length;
-  const completedToday = tasks.filter((t) => t.status === "COMPLETED").length;
+  const completedThisWeek = tasks.filter((t) => t.status === "COMPLETED").length;
   const readinessMeta = readinessLabel(readiness.total);
 
   const lastTest = progressAttempts[0];
@@ -59,7 +55,8 @@ export default async function OverviewPage() {
   const testDue = profile.nextProgressTestDueAt;
   const testOverdue = testDue && testDue < new Date() ? true : false;
 
-  const currentWeek = roadmap ? currentRoadmapWeek(roadmap.createdAt, roadmap.totalWeeks) : 0;
+  const currentWeek = roadmap ? (activeRoadmapWeek(roadmap.items) ?? roadmap.totalWeeks) : 0;
+  const roadmapComplete = roadmap ? roadmap.items.length > 0 && activeRoadmapWeek(roadmap.items) === null : false;
   const weekItems = roadmap ? roadmap.items.filter((i) => i.weekNumber === currentWeek) : [];
   const weekCompleted = weekItems.filter((i) => i.status === "COMPLETED").length;
   const weekPct = weekItems.length > 0 ? Math.round((weekCompleted / weekItems.length) * 100) : 0;
@@ -87,12 +84,43 @@ export default async function OverviewPage() {
           </form>
           <Link href="/app/tasks">
             <Button variant="gradient" size="sm" className="group">
-              <ListTodo className="h-4 w-4" /> Open today&apos;s tasks
+              <ListTodo className="h-4 w-4" /> Open weekly plan
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </Button>
           </Link>
         </div>
       </div>
+
+      <Card className="overflow-hidden border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-purple-50 animate-fade-in-up">
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-violet-500" />
+        <CardContent className="flex flex-wrap items-center justify-between gap-4 py-5 pl-5">
+          <div className="flex items-center gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25">
+              <Brain className="h-6 w-6" />
+            </span>
+            <div>
+              <p className="text-base font-bold text-slate-800">AI Skill Assessment</p>
+              <p className="text-sm text-slate-500">
+                {skillCount > 0
+                  ? `${skillCount} skills graded by AI against "${profile.targetRole}" — your skill profile is live.`
+                  : "Re-run the adaptive assessment to re-grade your skills against your target career."}
+              </p>
+            </div>
+          </div>
+          <div className="flex w-full items-center gap-3 sm:w-auto">
+            <Link href="/app/skills" className="hidden items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors sm:flex">
+              <Layers className="h-4 w-4" />
+              Skill profile
+            </Link>
+            <form action={restartAssessmentAction}>
+              <Button type="submit" variant="gradient" size="sm">
+                <ShieldCheck className="h-4 w-4 mr-1.5" />
+                Check My Career Readiness
+              </Button>
+            </form>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="animate-fade-in-up delay-75 overflow-hidden">
@@ -120,10 +148,10 @@ export default async function OverviewPage() {
         <Card className="animate-fade-in-up delay-100 overflow-hidden">
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-500" />
           <CardContent className="pt-6">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Today&apos;s tasks</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">This week&apos;s tasks</p>
             <p className="mt-2 text-3xl font-extrabold text-slate-900">{pendingCount}</p>
             <p className="mt-1 text-xs text-slate-400">
-              <span className="font-semibold text-emerald-600">{completedToday}</span> completed today
+              <span className="font-semibold text-emerald-600">{completedThisWeek}</span> completed this week
             </p>
           </CardContent>
         </Card>
@@ -147,7 +175,7 @@ export default async function OverviewPage() {
           <CardContent className="pt-6">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Roadmap week</p>
             <p className="mt-2 text-3xl font-extrabold text-slate-900">
-              {roadmap ? currentRoadmapWeek(roadmap.createdAt, roadmap.totalWeeks) : "—"}
+              {roadmap ? currentWeek : "—"}
             </p>
             <p className="mt-1 text-xs text-slate-400">
               of <span className="font-semibold text-slate-600">{roadmap?.totalWeeks ?? 12}</span> weeks
@@ -163,9 +191,9 @@ export default async function OverviewPage() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Week {currentWeek} progress
                 </p>
-                <p className="mt-2 text-3xl font-extrabold text-slate-900">{weekPct}%</p>
+                <p className="mt-2 text-3xl font-extrabold text-slate-900">{roadmapComplete ? "100%" : `${weekPct}%`}</p>
                 <p className="mt-1 text-xs text-slate-400">
-                  {weekCompleted}/{weekItems.length} milestones this week
+                  {roadmapComplete ? "Roadmap complete — fantastic work!" : `${weekCompleted}/${weekItems.length} milestones this week`}
                 </p>
               </div>
               <div className="text-right">
@@ -256,7 +284,7 @@ export default async function OverviewPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CalendarCheck className="h-4 w-4 text-emerald-500" />
-                  Today&apos;s plan
+                  This week&apos;s plan
                 </CardTitle>
                 <CardDescription>{weekLabel()}</CardDescription>
               </CardHeader>

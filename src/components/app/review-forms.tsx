@@ -98,7 +98,7 @@ function SectionStatus({ status, note }: { status: string; note: string }) {
 
 export function ResumeReviewForm({ defaultRole, studentName }: { defaultRole: string; studentName: string }) {
   const [result, setResult] = useState<{
-    atsScore: number; summary: string; content: string;
+    resumeId: string; atsScore: number; summary: string; content: string;
     missingSkills: string[]; suggestions: string[]; impactStatements: string[];
     sectionAnalysis: Array<{ section: string; status: string; note: string }>;
     keywordGaps: string[];
@@ -128,7 +128,7 @@ export function ResumeReviewForm({ defaultRole, studentName }: { defaultRole: st
     if (!result) return;
     setImproving(true);
     try {
-      const res = await generateImprovedResumeAction("current");
+      const res = await generateImprovedResumeAction(result.resumeId);
       if (res && "ok" in res) {
         setImprovedContent(res.improvedContent);
         setImprovedChanges(res.changesSummary);
@@ -299,8 +299,8 @@ export function ResumeReviewForm({ defaultRole, studentName }: { defaultRole: st
 
 export function ResumeBuilderForm({ defaultRole, studentName }: { defaultRole: string; studentName: string }) {
   const [result, setResult] = useState<{
-    atsScore: number; summary: string; missingSkills: string[];
-    suggestions: string[]; impactStatements: string[];
+    resumeId: string; atsScore: number; summary: string; content: string;
+    missingSkills: string[]; suggestions: string[]; impactStatements: string[];
     sectionAnalysis: Array<{ section: string; status: string; note: string }>;
     keywordGaps: string[];
   } | null>(null);
@@ -327,19 +327,16 @@ export function ResumeBuilderForm({ defaultRole, studentName }: { defaultRole: s
       const fd = new FormData(e.currentTarget);
       const res = await buildResumeAction(fd);
       if (res && "error" in res) setError(res.error);
-      else if (res) {
-        const reviewRes = await reviewResumeAction(fd);
-        if (reviewRes && "ok" in reviewRes) setResult(reviewRes);
-        else setResult({ atsScore: res.atsScore, summary: res.summary, missingSkills: [], suggestions: [], impactStatements: [], sectionAnalysis: [], keywordGaps: [] });
-      }
+      else if (res) setResult(res);
     } catch { setError("Something went wrong."); }
     finally { setPending(false); }
   }
 
   async function handleImprove() {
+    if (!result?.resumeId) return;
     setImproving(true);
     try {
-      const res = await generateImprovedResumeAction("current");
+      const res = await generateImprovedResumeAction(result.resumeId);
       if (res && "ok" in res) { setImprovedContent(res.improvedContent); setImprovedChanges(res.changesSummary); setShowImproved(true); }
     } catch { /* ignore */ }
     setImproving(false);

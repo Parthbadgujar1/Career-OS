@@ -1,14 +1,14 @@
-import { getOpportunitySuggestionsAction } from "@/server/actions/opportunities";
+import { getOpportunitySuggestionsAction, type OpportunityLoadResult } from "@/server/actions/opportunities";
 import { OpportunitiesPanel } from "@/components/app/opportunities-panel";
 
 export const dynamic = "force-dynamic";
 
 export default async function OpportunitiesPage() {
-  let initialData = null;
+  let initialData: OpportunityLoadResult | null = null;
   try {
     initialData = await getOpportunitySuggestionsAction();
   } catch {
-    // Client will handle errors on refresh
+    // Client will poll for status / show a refresh option.
   }
 
   return (

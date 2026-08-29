@@ -3,7 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge, Progress } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Mail, Target, Brain, Calendar, MessageSquare, MessageCircle } from "lucide-react";
+import { Mail, Target, Brain, Calendar, MessageSquare, MessageCircle, UserPlus, Sparkles } from "lucide-react";
+import { fromJson } from "@/lib/utils";
+import { fetchMentorCandidates, scoreMentorForStudent } from "@/lib/mentor-match";
+import { assignMentorToMeAction } from "@/server/actions/mentor";
+import { getCareerProfile } from "@/lib/careers";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +37,21 @@ export default async function MentorPage() {
       take: 10,
     }),
   ]);
+
+  const targetRoles = fromJson<string[]>(profile.targetRoles, profile.targetRole ? [profile.targetRole] : []);
+  const industries = fromJson<string[]>(profile.preferredIndustries, []);
+  const weakSkills = skills.filter((s) => s.selfRating <= 2).map((s) => s.skill.name);
+
+  let recommendations: { mentor: { userId: string; name: string; email: string; yearsExperience: number; bio: string | null }; score: number; reasons: string[] }[] = [];
+  if (!mentor) {
+    const candidates = await fetchMentorCandidates(prisma);
+    recommendations = candidates
+      .map((m) => ({ mentor: m, ...scoreMentorForStudent(m, { targetRoles, industries, weakSkills }) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+  }
+
+  const primaryCareer = targetRoles[0] ? getCareerProfile(targetRoles[0]) : null;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 animate-fade-in-up">
@@ -72,16 +91,82 @@ export default async function MentorPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card className="border-amber-200 bg-amber-50/50">
-          <CardHeader>
-            <CardTitle>No Mentor Assigned</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center py-4">
-            <p className="text-sm text-slate-600">
-              You don&apos;t have a mentor assigned yet. Contact your program admin to get paired with a mentor who can guide your career journey.
-            </p>
-          </CardContent>
-        </Card>
+        <>
+          <Card className="border-amber-200 bg-amber-50/50">
+            <CardHeader>
+              <CardTitle>No Mentor Assigned</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center py-4">
+              <p className="text-sm text-slate-600">
+                Pick a mentor matched to your target career, industry and skill gaps — or ask your
+                program admin to pair you.
+              </p>
+            </CardContent>
+          </Card>
+
+          {recommendations.length > 0 ? (
+            <div>
+              <div className="mb-3 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-indigo-600" />
+                <h2 className="text-lg font-bold">Recommended for you</h2>
+              </div>
+              <div className="space-y-3">
+                {recommendations.map((r) => {
+                  const initial = (r.mentor.name || "M")[0].toUpperCase();
+                  return (
+                    <Card key={r.mentor.userId} className="overflow-hidden">
+                      <CardContent className="p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 text-lg font-bold text-white">
+                              {initial}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold">{r.mentor.name}</p>
+                                <Badge variant="indigo">{Math.round(r.score)}% match</Badge>
+                              </div>
+                              <p className="text-xs text-slate-500">
+                                {r.mentor.yearsExperience > 0 ? `${r.mentor.yearsExperience} yrs experience` : "Mentor"} ·{" "}
+                                <Mail className="h-3 w-3 inline" /> <a href={`mailto:${r.mentor.email}`} className="hover:text-indigo-600 hover:underline">{r.mentor.email}</a>
+                              </p>
+                            </div>
+                          </div>
+                          <form action={assignMentorToMeAction.bind(null, r.mentor.userId)}>
+                            <Button type="submit" variant="gradient" size="sm">
+                              <UserPlus className="h-4 w-4 mr-1.5" />
+                              Assign
+                            </Button>
+                          </form>
+                        </div>
+                        <ul className="mt-3 space-y-1 text-xs text-slate-600">
+                          {r.reasons.slice(0, 3).map((reason, i) => (
+                            <li key={i} className="flex items-start gap-1.5">
+                              <span className="mt-0.5 h-1 w-1 shrink-0 rounded-full bg-indigo-400" />
+                              {reason}
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <Card className="border-amber-200 bg-amber-50/50">
+              <CardHeader>
+                <CardTitle>No matching mentors yet</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center py-4">
+                <p className="text-sm text-slate-600">
+                  No mentors with expertise matching {primaryCareer?.title ?? targetRoles[0] ?? "your goal"} are
+                  registered. Contact your program admin to request one.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
