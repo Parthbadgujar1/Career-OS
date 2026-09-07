@@ -126,7 +126,7 @@ export default async function MentorPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="border-b border-slate-200 bg-white px-6 py-4">
+      <div className="border-b border-slate-200 bg-surface px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-semibold">
@@ -140,7 +140,7 @@ export default async function MentorPage() {
 
       <div className="mx-auto max-w-6xl p-6 space-y-6 animate-fade-in-up">
         <div>
-          <h1 className="text-2xl font-bold">Mentor Dashboard</h1>
+          <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900">Mentor Dashboard</h1>
           <p className="text-sm text-slate-500">
             Your {studentsData.length} assigned students · avg readiness {avgReadiness}/100
           </p>

@@ -27,7 +27,7 @@ export default async function ProgressTestPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold">Progress Tests</h1>
+        <h1 className="font-serif text-3xl font-medium tracking-tight">Progress Tests</h1>
         <p className="text-sm text-slate-500">
           AI tracks your growth with a 30-question test every {PROGRESS_TEST_INTERVAL_DAYS} days. Attempt it whenever you&apos;re ready.
         </p>
@@ -126,7 +126,7 @@ export default async function ProgressTestPage() {
               const pct = Math.round((a.score / a.maxScore) * 100);
               const mins = Math.floor(a.timeSpentSec / 60);
               return (
-                <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white p-4">
+                <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-surface p-4">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant={a.difficulty === "HARD" ? "danger" : a.difficulty === "EASY" ? "success" : "warning"}>

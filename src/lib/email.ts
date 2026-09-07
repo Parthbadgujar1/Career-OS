@@ -1,23 +1,31 @@
 import "server-only";
+import { siteUrl } from "@/lib/site";
 
 /**
  * Transactional email via Resend's REST API (no SDK dependency).
- * When RESEND_API_KEY is not configured, emails are logged to the console
- * instead so local development and staging keep working end-to-end.
+ * Outside production, when RESEND_API_KEY is not configured, emails are
+ * logged to the console instead so local development keeps working
+ * end-to-end. In production a missing key or sender is a hard error — the
+ * app must not silently pretend verification/password emails were sent.
  */
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
 export function appUrl(): string {
-  return (
-    process.env.NEXTAUTH_URL ??
-    process.env.AUTH_URL ??
-    "http://localhost:3000"
-  ).replace(/\/$/, "");
+  return siteUrl();
 }
 
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
+  const isProd = process.env.NODE_ENV === "production";
+
+  if (isProd && !apiKey) {
+    throw new Error("RESEND_API_KEY is missing — transactional emails cannot be sent in production.");
+  }
+  if (isProd && !process.env.EMAIL_FROM) {
+    throw new Error("EMAIL_FROM is missing — set a verified Resend sender in production.");
+  }
+
   const from = process.env.EMAIL_FROM || "Career OS <onboarding@resend.dev>";
 
   if (!apiKey) {

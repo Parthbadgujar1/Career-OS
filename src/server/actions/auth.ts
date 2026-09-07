@@ -12,6 +12,7 @@ import {
   sendWelcomeEmail,
 } from "@/lib/email";
 import { audit } from "@/lib/audit";
+import { safeCallbackUrl } from "@/lib/utils";
 
 // ── Register ──────────────────────────────────────────────────────────────
 
@@ -80,10 +81,15 @@ export async function registerAction(_prev: unknown, formData: FormData) {
   await prisma.verificationToken.create({
     data: { identifier: emailLower, token: hashed, type: "EMAIL_VERIFY", expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) },
   });
-  await sendVerificationEmail(emailLower, raw);
+  try {
+    await sendVerificationEmail(emailLower, raw);
+  } catch (e) {
+    console.error("[auth] verification email could not be sent", e);
+    return { error: "Account created, but the verification email could not be sent. Please contact support." };
+  }
 
   // Welcome email (non-blocking)
-  sendWelcomeEmail(emailLower, name).catch(() => {});
+  sendWelcomeEmail(emailLower, name).catch((e) => console.error("[auth] welcome email failed", e));
 
   audit({ actorId: user.id, actorRole: role, action: "REGISTER", metadata: { email: emailLower } });
 
@@ -104,7 +110,8 @@ export async function registerAction(_prev: unknown, formData: FormData) {
 export async function loginAction(_prev: unknown, formData: FormData) {
   const email = (formData.get("email") as string) ?? "";
   const password = (formData.get("password") as string) ?? "";
-  const callbackUrl = (formData.get("callbackUrl") as string) || "/app";
+  // Server-side enforcement of the open-redirect guard (client input is untrusted).
+  const callbackUrl = safeCallbackUrl(formData.get("callbackUrl") as string | null);
 
   // Server-side rate-limit (also enforced in authorize() callback)
   const headers = new Headers();
@@ -141,7 +148,11 @@ export async function requestPasswordResetAction(_prev: unknown, formData: FormD
     await prisma.passwordResetToken.create({
       data: { userId: user.id, token: hashed, expiresAt: new Date(Date.now() + 60 * 60 * 1000) },
     });
-    await sendPasswordResetEmail(user.email, user.name, raw);
+    await sendPasswordResetEmail(user.email, user.name, raw).catch((e) => {
+      // Preserve anti-enumeration behavior (always return success) but make a
+      // broken email config loud in the server logs.
+      console.error("[auth] password reset email could not be sent", e);
+    });
     audit({ actorId: user.id, action: "REQUEST_PASSWORD_RESET" });
   }
   return { success: true };
@@ -200,7 +211,9 @@ export async function resendVerificationAction(_prev: unknown, formData: FormDat
     await prisma.verificationToken.create({
       data: { identifier: email.toLowerCase(), token: hashed, type: "EMAIL_VERIFY", expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) },
     });
-    await sendVerificationEmail(email.toLowerCase(), raw);
+    await sendVerificationEmail(email.toLowerCase(), raw).catch((e) => {
+      console.error("[auth] resend verification email could not be sent", e);
+    });
   }
   return { success: true };
 }

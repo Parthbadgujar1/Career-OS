@@ -144,10 +144,10 @@ export function AdaptiveAssessment() {
   // ── Idle state ──
   if (phase === "idle") {
     return (
-      <Card className="border-indigo-100 bg-gradient-to-br from-white to-indigo-50/30">
+      <Card className="border-indigo-100 bg-surface">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-sm shadow-indigo-900/10">
               <Brain className="h-6 w-6" />
             </div>
             <div>
@@ -157,7 +157,7 @@ export function AdaptiveAssessment() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="rounded-xl border border-indigo-100 bg-white p-4">
+          <div className="rounded-xl border border-indigo-100 bg-surface p-4">
             <h3 className="text-sm font-semibold text-slate-800">How it works</h3>
             <ul className="mt-2 space-y-2 text-sm text-slate-600">
               <li className="flex items-start gap-2">
@@ -184,7 +184,7 @@ export function AdaptiveAssessment() {
               {error}
             </div>
           )}
-          <Button onClick={startAssessment} disabled={isPending} variant="gradient" className="w-full">
+          <Button onClick={startAssessment} disabled={isPending} className="w-full">
             {isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -264,7 +264,7 @@ export function AdaptiveAssessment() {
           <CardContent>
             <div className="grid gap-3 sm:grid-cols-2">
               {result.grades.map((g) => (
-                <div key={g.name} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-3">
+                <div key={g.name} className="flex items-center justify-between rounded-xl border border-slate-100 bg-surface p-3">
                   <div className="min-w-0">
                     <p className="font-medium text-slate-800">{g.name}</p>
                     <p className="text-xs text-slate-400">{g.category}</p>
@@ -300,7 +300,7 @@ export function AdaptiveAssessment() {
           <CardContent>
             <p className="text-sm text-slate-700">{result.recommendedPath}</p>
             <div className="mt-4 flex gap-3">
-              <Button variant="gradient" onClick={() => router.push("/app/roadmap")}>
+              <Button onClick={() => router.push("/app/roadmap")}>
                 <MapIcon className="h-4 w-4 mr-2" />
                 View Roadmap
               </Button>
@@ -385,7 +385,6 @@ export function AdaptiveAssessment() {
         <Button
           onClick={phase === "round1" ? submitRound1 : submitRound2}
           disabled={!allCurrentAnswered || isPending}
-          variant="gradient"
         >
           {isPending ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />

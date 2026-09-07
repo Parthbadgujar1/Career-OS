@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Target, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { siteUrl } from "@/lib/site";
 
 interface CareerTrack {
   slug: string;
@@ -181,11 +182,11 @@ export default async function CareerPage({ params }: { params: Promise<{ slug: s
     "@type": "WebPage",
     name: `${track.title} Career Path`,
     description: track.description,
-    url: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://careeros.in"}/careers/${track.slug}`,
+    url: `${siteUrl()}/careers/${track.slug}`,
     isPartOf: {
       "@type": "WebSite",
       name: "Career OS",
-      url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://careeros.in",
+      url: siteUrl(),
     },
   };
 
@@ -193,7 +194,7 @@ export default async function CareerPage({ params }: { params: Promise<{ slug: s
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <header className="border-b border-slate-100 bg-white/80 backdrop-blur-xl sticky top-0 z-30">
+      <header className="border-b border-slate-100 bg-surface/80 backdrop-blur-xl sticky top-0 z-30">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
           <Link href="/" className="text-lg font-bold tracking-tight">
             Career <span className="text-violet-600">OS</span>
@@ -201,7 +202,7 @@ export default async function CareerPage({ params }: { params: Promise<{ slug: s
           <div className="flex items-center gap-3">
             <Link href="/login" className="text-sm text-slate-600 hover:text-slate-900">Log in</Link>
             <Link href="/register">
-              <Button size="sm" className="rounded-full bg-violet-600 hover:bg-violet-700 text-white text-sm">Get Started Free</Button>
+              <Button size="sm" className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm">Get Started Free</Button>
             </Link>
           </div>
         </div>
@@ -209,7 +210,7 @@ export default async function CareerPage({ params }: { params: Promise<{ slug: s
 
       <main className="mx-auto max-w-5xl px-6 py-12 space-y-12">
         <section className="space-y-4">
-          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">{track.title} Career Path</h1>
+          <h1 className="font-serif text-4xl font-medium tracking-tight text-slate-900 sm:text-5xl">{track.title} Career Path</h1>
           <p className="text-lg text-slate-600 max-w-2xl">{track.longDescription}</p>
           <div className="flex flex-wrap gap-4 text-sm text-slate-500">
             <span className="flex items-center gap-1"><Briefcase className="h-4 w-4" /> {track.openings}</span>
@@ -218,7 +219,7 @@ export default async function CareerPage({ params }: { params: Promise<{ slug: s
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl font-bold text-slate-900">Key Skills</h2>
+          <h2 className="font-serif text-2xl font-semibold text-slate-900">Key Skills</h2>
           <div className="flex flex-wrap gap-2">
             {track.skills.map((s) => (
               <span key={s} className="rounded-full bg-violet-50 px-3 py-1 text-sm font-medium text-violet-700 border border-violet-200">{s}</span>
@@ -227,31 +228,31 @@ export default async function CareerPage({ params }: { params: Promise<{ slug: s
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl font-bold text-slate-900">Your Roadmap with Career OS</h2>
+          <h2 className="font-serif text-2xl font-semibold text-slate-900">Your Roadmap with Career OS</h2>
           <ol className="space-y-3">
             {track.roadmap.map((step, i) => (
               <li key={i} className="flex gap-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-600 text-xs font-bold text-white">{i + 1}</span>
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">{i + 1}</span>
                 <span className="text-slate-700 leading-relaxed pt-0.5">{step}</span>
               </li>
             ))}
           </ol>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center space-y-4 shadow-sm">
-          <h2 className="text-2xl font-bold text-slate-900">Start Your {track.title} Journey Today</h2>
+        <section className="rounded-2xl border border-slate-200 bg-surface p-8 text-center space-y-4 shadow-sm">
+          <h2 className="font-serif text-2xl font-semibold text-slate-900">Start Your {track.title} Journey Today</h2>
           <p className="text-slate-600 max-w-lg mx-auto">
             Career OS gives you an adaptive roadmap, AI coaching, and weekly tasks — tailored to your current level. Free for students.
           </p>
           <Link href="/register">
-            <Button size="lg" className="rounded-full bg-violet-600 hover:bg-violet-700 text-white">
+            <Button size="lg" className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white">
               Get Started Free <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl font-bold text-slate-900">Explore Other Career Tracks</h2>
+          <h2 className="font-serif text-2xl font-semibold text-slate-900">Explore Other Career Tracks</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {TRACKS.filter((t) => t.slug !== track.slug).map((t) => (
               <Link key={t.slug} href={`/careers/${t.slug}`} className="rounded-xl border border-slate-200 p-4 hover:border-violet-300 hover:shadow-sm transition-all">
@@ -263,7 +264,7 @@ export default async function CareerPage({ params }: { params: Promise<{ slug: s
         </section>
       </main>
 
-      <footer className="border-t border-slate-100 bg-white py-8 text-center text-sm text-slate-500">
+      <footer className="border-t border-slate-100 bg-surface py-8 text-center text-sm text-slate-500">
         <Link href="/" className="font-bold text-slate-900">Career OS</Link>
         <p className="mt-1">Free AI-powered career readiness for students</p>
       </footer>

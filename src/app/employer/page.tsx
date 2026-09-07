@@ -41,7 +41,7 @@ export default async function EmployerPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold">Employer Dashboard</h1>
+        <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900">Employer Dashboard</h1>
         <p className="text-sm text-slate-500">Manage your job postings and applicants · {user.email}</p>
       </div>
 

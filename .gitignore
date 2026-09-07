@@ -53,5 +53,6 @@ next-env.d.ts
 
 # local artifacts
 .next-dev*.log
+.next-dev*.pid
 career-os-main*.zip
 /career-os-main/

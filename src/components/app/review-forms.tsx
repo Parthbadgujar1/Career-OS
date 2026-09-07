@@ -147,9 +147,9 @@ export function ResumeReviewForm({ defaultRole, studentName }: { defaultRole: st
         {result ? (
           <div className="space-y-5">
             {/* Score */}
-            <div className="flex items-center gap-4 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 p-4">
+            <div className="flex items-center gap-4 rounded-xl bg-indigo-50 p-4">
               <div className="text-center">
-                <p className="text-4xl font-bold text-indigo-700">{result.atsScore}</p>
+                <p className="font-serif text-4xl font-semibold text-indigo-700">{result.atsScore}</p>
                 <p className="text-xs text-slate-500">/100</p>
               </div>
               <div className="flex-1">
@@ -244,7 +244,7 @@ export function ResumeReviewForm({ defaultRole, studentName }: { defaultRole: st
                   value={showOriginal ? result.content : improvedContent}
                   readOnly
                   rows={12}
-                  className="font-mono text-xs text-slate-700 bg-white"
+                  className="font-mono text-xs text-slate-700 bg-surface"
                 />
               </div>
             )}
@@ -253,13 +253,13 @@ export function ResumeReviewForm({ defaultRole, studentName }: { defaultRole: st
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={reset}>Review another resume</Button>
               {!showImproved && (
-                <Button variant="gradient" onClick={handleImprove} disabled={improving}>
+                <Button variant="default" onClick={handleImprove} disabled={improving}>
                   {improving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
                   {improving ? "Generating improved version..." : "Generate Improved Resume"}
                 </Button>
               )}
               {showImproved && improvedContent && (
-                <Button variant="gradient" onClick={() => downloadResumePdf(studentName, defaultRole, improvedContent, "improved_")}>
+                <Button variant="default" onClick={() => downloadResumePdf(studentName, defaultRole, improvedContent, "improved_")}>
                   <Download className="h-4 w-4 mr-2" />
                   Download Improved PDF
                 </Button>
@@ -356,9 +356,9 @@ export function ResumeBuilderForm({ defaultRole, studentName }: { defaultRole: s
       <CardContent className="space-y-4">
         {result ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-4 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 p-4">
+            <div className="flex items-center gap-4 rounded-xl bg-indigo-50 p-4">
               <div className="text-center">
-                <p className="text-4xl font-bold text-indigo-700">{result.atsScore}</p>
+                <p className="font-serif text-4xl font-semibold text-indigo-700">{result.atsScore}</p>
                 <p className="text-xs text-slate-500">/100</p>
               </div>
               <div className="flex-1">
@@ -404,7 +404,7 @@ export function ResumeBuilderForm({ defaultRole, studentName }: { defaultRole: s
                 {improvedChanges.length > 0 && (
                   <ul className="text-xs text-slate-500 space-y-0.5">{improvedChanges.map((c, i) => <li key={i}>• {c}</li>)}</ul>
                 )}
-                <Textarea value={improvedContent} readOnly rows={12} className="font-mono text-xs text-slate-700 bg-white" />
+                <Textarea value={improvedContent} readOnly rows={12} className="font-mono text-xs text-slate-700 bg-surface" />
               </div>
             )}
 
@@ -413,13 +413,13 @@ export function ResumeBuilderForm({ defaultRole, studentName }: { defaultRole: s
                 Build another resume
               </Button>
               {!showImproved && (
-                <Button variant="gradient" onClick={handleImprove} disabled={improving}>
+                <Button variant="default" onClick={handleImprove} disabled={improving}>
                   {improving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
                   Generate Improved Resume
                 </Button>
               )}
               {showImproved && improvedContent && (
-                <Button variant="gradient" onClick={() => downloadResumePdf(studentName, fields.role, improvedContent, "improved_")}>
+                <Button variant="default" onClick={() => downloadResumePdf(studentName, fields.role, improvedContent, "improved_")}>
                   <Download className="h-4 w-4 mr-2" />Download Improved PDF
                 </Button>
               )}
@@ -506,9 +506,9 @@ export function ProfileReviewForm({ studentName }: { studentName: string }) {
       <CardContent>
         {result ? (
           <div className="space-y-5">
-            <div className="flex items-center gap-4 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 p-4">
+            <div className="flex items-center gap-4 rounded-xl bg-indigo-50 p-4">
               <div className="text-center">
-                <p className="text-4xl font-bold text-indigo-700">{result.score}</p>
+                <p className="font-serif text-4xl font-semibold text-indigo-700">{result.score}</p>
                 <p className="text-xs text-slate-500">/100</p>
               </div>
               <div className="flex-1">
@@ -580,11 +580,11 @@ export function ProfileReviewForm({ studentName }: { studentName: string }) {
                 <div className="space-y-3">
                   <div>
                     <p className="text-xs font-medium text-slate-600 mb-1">Improved Headline</p>
-                    <div className="rounded-lg bg-white border border-slate-200 p-2.5 text-sm text-slate-700">{improvedData.headline}</div>
+                    <div className="rounded-lg bg-surface border border-slate-200 p-2.5 text-sm text-slate-700">{improvedData.headline}</div>
                   </div>
                   <div>
                     <p className="text-xs font-medium text-slate-600 mb-1">Improved About</p>
-                    <Textarea value={improvedData.about} readOnly rows={6} className="text-xs text-slate-700 bg-white" />
+                    <Textarea value={improvedData.about} readOnly rows={6} className="text-xs text-slate-700 bg-surface" />
                   </div>
                   {improvedData.skillsToAdd.length > 0 && (
                     <div>
@@ -595,7 +595,7 @@ export function ProfileReviewForm({ studentName }: { studentName: string }) {
                   {improvedData.projectsSection && (
                     <div>
                       <p className="text-xs font-medium text-slate-600 mb-1">Projects Section</p>
-                      <Textarea value={improvedData.projectsSection} readOnly rows={5} className="text-xs text-slate-700 bg-white" />
+                      <Textarea value={improvedData.projectsSection} readOnly rows={5} className="text-xs text-slate-700 bg-surface" />
                     </div>
                   )}
                 </div>
@@ -605,13 +605,13 @@ export function ProfileReviewForm({ studentName }: { studentName: string }) {
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => { setResult(null); setImprovedData(null); setShowImproved(false); }}>Review another profile</Button>
               {!showImproved && (
-                <Button variant="gradient" onClick={handleImprove} disabled={improving}>
+                <Button variant="default" onClick={handleImprove} disabled={improving}>
                   {improving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
                   Generate Improved Profile
                 </Button>
               )}
               {showImproved && improvedData && (
-                <Button variant="gradient" onClick={downloadProfile}>
+                <Button variant="default" onClick={downloadProfile}>
                   <Download className="h-4 w-4 mr-2" />Download Improved Profile
                 </Button>
               )}

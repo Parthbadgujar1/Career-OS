@@ -220,7 +220,7 @@ export function JdMatchForm({ history }: { history: HistoryEntry[] }) {
   return (
     <div className="mx-auto max-w-4xl space-y-6 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold">JD Match</h1>
+        <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900">JD Match</h1>
         <p className="text-sm text-slate-500">Paste a job description and get a detailed breakdown of how you match</p>
       </div>
 
@@ -254,7 +254,7 @@ export function JdMatchForm({ history }: { history: HistoryEntry[] }) {
                 placeholder="Paste the full job description here..."
               />
             </div>
-            <Button type="submit" variant="gradient" disabled={loading} className="w-full">
+            <Button type="submit" variant="default" disabled={loading} className="w-full">
               {loading ? "Analyzing..." : "Analyze Match"}
             </Button>
           </form>

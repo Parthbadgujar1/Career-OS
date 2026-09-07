@@ -5,7 +5,7 @@ export default function Loading() {
     <main className="flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-md space-y-4">
         <div className="flex items-center justify-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-sm font-bold text-white shadow-lg">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold font-serif text-white shadow-sm">
             CO
           </div>
           <span className="text-xl font-bold text-slate-900">Career OS</span>

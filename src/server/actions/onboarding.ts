@@ -11,6 +11,7 @@ import { persistRoadmap } from "@/lib/engine/roadmap";
 import { snapshotReadiness } from "@/lib/scoring/readiness";
 import { scheduleNextProgressTest } from "@/lib/engine/tests";
 import { fromJson } from "@/lib/utils";
+import { recommendedRoadmapWeeks, remainingAcademicYears, WEEKS_PER_YEAR } from "@/lib/constants";
 
 const onboardingSchema = z.object({
   degree: z.string().min(1, "Select your degree"),
@@ -92,7 +93,7 @@ export async function saveOnboardingAction(_prev: unknown, formData: FormData) {
       skills: [],
       weakSkills: [],
     },
-    12,
+    recommendedRoadmapWeeks(data.year, data.degree),
     true
   );
 
@@ -160,7 +161,7 @@ export async function submitAssessmentAction(
         skills: skillRows.map((s) => ({ name: s.skill.name, rating: s.selfRating })),
         weakSkills: skillRows.filter((s) => s.selfRating <= 2).map((s) => s.skill.name),
       },
-      12,
+      recommendedRoadmapWeeks(profile.year, profile.degree),
       true
     );
     await scheduleNextProgressTest(prisma, profile.id);
@@ -174,7 +175,10 @@ export async function submitAssessmentAction(
 
 export async function generateRoadmapAction(formData: FormData) {
   const { profile } = await requireStudentProfile();
-  const durationWeeks = Math.max(4, Number(formData.get("durationWeeks")) || 12);
+  const raw = Number(formData.get("durationWeeks"));
+  const recommended = recommendedRoadmapWeeks(profile.year, profile.degree);
+  const maxWeeks = remainingAcademicYears(profile.year, profile.degree) * WEEKS_PER_YEAR;
+  const durationWeeks = raw && raw >= 4 ? Math.min(raw, maxWeeks) : recommended;
   const skills = await prisma.studentSkill.findMany({
     where: { studentId: profile.id },
     include: { skill: true },
@@ -203,11 +207,12 @@ export async function changePathAction() {
   const { profile } = await requireStudentProfile();
   // Soft reset: the old roadmap and profile stay visible until the student
   // saves the wizard (which clears ratings/assessments and regenerates).
+  // assessmentComplete is left untouched — canceling must restore the exact
+  // dashboard experience; saving resets it via saveOnboardingAction.
   await prisma.studentProfile.update({
     where: { id: profile.id },
     data: {
       onboardedAt: null,
-      assessmentComplete: false,
     },
   });
   revalidatePath("/app");

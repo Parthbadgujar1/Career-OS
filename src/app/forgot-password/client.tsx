@@ -29,7 +29,7 @@ export default function ForgotPasswordForm() {
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" name="email" type="email" required placeholder="you@college.edu" />
               </div>
-              <Button type="submit" className="w-full" variant="gradient" disabled={pending}>
+              <Button type="submit" className="w-full" disabled={pending}>
                 {pending ? "Sending..." : "Send reset link"}
               </Button>
             </>

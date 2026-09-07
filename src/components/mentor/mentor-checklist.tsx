@@ -28,7 +28,7 @@ export function MentorChecklist({ items }: { items: string[] }) {
             "flex items-start gap-2.5 rounded-lg border p-3 text-xs leading-relaxed text-slate-700 font-medium text-left transition-all cursor-pointer",
             done.has(i)
               ? "border-emerald-200 bg-emerald-50/60 text-slate-400 line-through"
-              : "border-slate-100 bg-white/40 hover:border-indigo-200 hover:bg-indigo-50/40"
+              : "border-slate-100 bg-surface/40 hover:border-indigo-200 hover:bg-indigo-50/40"
           )}
         >
           <span

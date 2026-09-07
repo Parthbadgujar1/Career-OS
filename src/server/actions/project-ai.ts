@@ -5,6 +5,16 @@ import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
 import { suggestProjectDetails } from "@/lib/ai/opportunities";
 
+const MAX_TITLE_CHARS = 120;
+const MAX_DESC_CHARS = 2_000;
+
+function capped(
+  title: string,
+  description: string
+): { title: string; description: string } {
+  return { title: (title || "").slice(0, MAX_TITLE_CHARS), description: (description || "").slice(0, MAX_DESC_CHARS) };
+}
+
 export async function suggestProjectDetailsAction(
   title: string,
   description: string
@@ -22,9 +32,12 @@ export async function suggestProjectDetailsAction(
     include: { skill: true },
   });
 
+  const { title: cTitle, description: cDescription } = capped(title, description);
+  if (!cTitle.trim()) return { error: "Project title is required." };
+
   const result = await suggestProjectDetails({
-    title,
-    description,
+    title: cTitle,
+    description: cDescription,
     degree: profile.degree ?? "",
     specialization: profile.specialization ?? "",
     targetRole: profile.targetRole ?? "",
@@ -36,10 +49,12 @@ export async function suggestProjectDetailsAction(
 
 export async function createProjectWithAIAction(formData: FormData) {
   const { profile } = await requireStudentProfile();
-  const title = (formData.get("title") as string) || "";
-  const description = (formData.get("description") as string) || "";
+  const { title, description } = capped(
+    (formData.get("title") as string) || "",
+    (formData.get("description") as string) || ""
+  );
   const techStackRaw = (formData.get("techStack") as string) || "";
-  const resumeBlurb = (formData.get("resumeBlurb") as string) || "";
+  const resumeBlurb = ((formData.get("resumeBlurb") as string) || "").slice(0, 500);
 
   const techStack = techStackRaw
     ? techStackRaw.split(",").map((s) => s.trim()).filter(Boolean)

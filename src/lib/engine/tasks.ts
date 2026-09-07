@@ -153,11 +153,12 @@ export async function syncTasksForWeek(prisma: PrismaClient, studentId: string, 
   const weekItems = roadmap.items.filter((i) => i.weekNumber === activeWeek);
   const keepItemIds = new Set(weekItems.map((i) => i.id));
 
-  // Drop pending/skipped tasks that no longer belong to the active week (e.g.
+  // Drop pending tasks that no longer belong to the active week (e.g.
   // a previous fallback plan, or tasks from a week that got resolved).
+  // Skipped tasks are preserved so the UI can display them.
   const open = await prisma.task.findMany({ where: { studentId, status: { in: ["PENDING", "SKIPPED"] } } });
   for (const t of open) {
-    if (!t.roadmapItemId || !keepItemIds.has(t.roadmapItemId)) {
+    if (t.status === "PENDING" && (!t.roadmapItemId || !keepItemIds.has(t.roadmapItemId))) {
       await prisma.task.delete({ where: { id: t.id } });
     }
   }
@@ -183,6 +184,7 @@ export async function syncTasksForWeek(prisma: PrismaClient, studentId: string, 
           estimatedHours: estimateHours(item.category),
           assignedDate: new Date(),
           roadmapItemId: item.id,
+          resources: item.resources ? (item.resources as object) : undefined,
         },
       });
     }
@@ -230,6 +232,22 @@ export async function skipTask(prisma: PrismaClient, studentId: string, taskId: 
     });
   }
   return prisma.task.update({ where: { id: taskId }, data: { status: "SKIPPED", completedAt: new Date() } });
+}
+
+export async function restoreTask(prisma: PrismaClient, studentId: string, taskId: string) {
+  const task = await prisma.task.findFirst({ where: { id: taskId, studentId } });
+  if (!task) throw new Error("Task not found");
+  if (task.status !== "SKIPPED") throw new Error("Only skipped tasks can be restored");
+  const thisMonday = mondayOf(new Date());
+  return prisma.task.update({
+    where: { id: taskId },
+    data: {
+      status: "PENDING",
+      completedAt: null,
+      weekStart: thisMonday,
+      roadmapItemId: null,
+    },
+  });
 }
 
 export { currentWeek, mondayOf };

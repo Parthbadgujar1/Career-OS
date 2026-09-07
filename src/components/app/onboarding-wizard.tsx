@@ -275,7 +275,7 @@ export function OnboardingWizard({
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-purple-50/60">
+      <CardHeader className="border-b border-slate-100 bg-indigo-50">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-indigo-600">
@@ -309,7 +309,7 @@ export function OnboardingWizard({
       </CardHeader>
 
       <CardContent className="p-6">
-        {showBack && step === 0 && (
+        {showBack && (
           <form action={cancelPathChangeAction} className="mb-5">
             <Button type="submit" variant="outline" size="sm" className="text-slate-500 hover:text-slate-700">
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -582,19 +582,19 @@ export function OnboardingWizard({
                         {primaryMarket && (
                           <>
                             <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                              <div className="rounded-lg border border-slate-200 bg-surface px-3 py-2">
                                 <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
                                   <IndianRupee className="h-3.5 w-3.5" /> Entry salary
                                 </div>
                                 <p className="mt-1 text-sm font-bold text-slate-800">{primaryMarket.salary}</p>
                               </div>
-                              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                              <div className="rounded-lg border border-slate-200 bg-surface px-3 py-2">
                                 <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
                                   <TrendingUp className="h-3.5 w-3.5" /> Market outlook
                                 </div>
                                 <p className="mt-1 text-sm font-bold text-slate-800">{primaryMarket.demand}</p>
                               </div>
-                              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                              <div className="rounded-lg border border-slate-200 bg-surface px-3 py-2">
                                 <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
                                   <Route className="h-3.5 w-3.5" /> Growth path
                                 </div>
@@ -617,7 +617,7 @@ export function OnboardingWizard({
                           {primaryBlurb.skills.map((s) => (
                             <span
                               key={s}
-                              className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600"
+                              className="rounded-md border border-slate-200 bg-surface px-2 py-1 text-xs font-medium text-slate-600"
                             >
                               {s}
                             </span>
@@ -891,7 +891,7 @@ export function OnboardingWizard({
           <input type="hidden" name="industries" value={JSON.stringify(industries)} />
           <input type="hidden" name="targetRoles" value={JSON.stringify(roles)} />
 
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-indigo-50 px-5 py-4">
             {step > 0 ? (
               <Button type="button" variant="outline" onClick={back}>
                 <ArrowLeft className="h-4 w-4" />
@@ -902,12 +902,12 @@ export function OnboardingWizard({
             )}
 
             {step < STEPS.length - 1 ? (
-              <Button type="button" onClick={next} variant="gradient">
+              <Button type="button" onClick={next}>
                 Continue
                 <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
-              <Button type="submit" disabled={pending} variant="gradient">
+              <Button type="submit" disabled={pending}>
                 {pending ? "Building your plan..." : "Save & start assessment"}
               </Button>
             )}

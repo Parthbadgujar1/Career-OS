@@ -55,7 +55,7 @@ export function ProblemCard({
   const diffVariant = problem.difficulty === "EASY" ? "success" : problem.difficulty === "MEDIUM" ? "warning" : "danger";
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-surface p-4 shadow-sm">
       <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between text-left">
         <div>
           <p className="font-medium">{problem.title}</p>
@@ -120,7 +120,7 @@ export function ProblemCard({
           )}
 
           {aiFeedback && (
-            <div className="mt-3 overflow-hidden rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50/40 to-purple-50/40 p-4 shadow-inner text-sm space-y-3 animate-fade-in-up">
+            <div className="mt-3 overflow-hidden rounded-xl border border-indigo-100 bg-indigo-50 p-4 shadow-sm text-sm space-y-3 animate-fade-in-up">
               <div className="flex items-center justify-between border-b border-indigo-100 pb-2">
                 <span className="flex items-center gap-1.5 font-bold text-indigo-900">
                   <Sparkles className="h-4 w-4 text-indigo-500 animate-pulse" />

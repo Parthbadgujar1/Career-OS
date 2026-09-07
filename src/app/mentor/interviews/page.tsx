@@ -24,7 +24,7 @@ export default async function MentorInterviewsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold">Mock Interviews</h1>
+        <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900">Mock Interviews</h1>
         <p className="text-sm text-slate-500">
           Publish Google Meet interview slots for your mentees, then grade them right here.
         </p>
@@ -68,7 +68,7 @@ export default async function MentorInterviewsPage() {
               <Input id="meetUrl" name="meetUrl" placeholder="https://meet.google.com/abc-defg-hij" />
             </div>
             <div className="sm:col-span-2">
-              <Button type="submit" variant="gradient">
+              <Button type="submit" variant="default">
                 <Video className="h-4 w-4" />
                 Publish slot
               </Button>
@@ -79,7 +79,7 @@ export default async function MentorInterviewsPage() {
 
       <div className="space-y-4">
         {slots.length === 0 && (
-          <p className="rounded-lg border border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
+          <p className="rounded-lg border border-dashed border-slate-200 bg-surface p-6 text-center text-sm text-slate-500">
             No slots yet. Publish your first interview slot above.
           </p>
         )}
@@ -150,7 +150,7 @@ export default async function MentorInterviewsPage() {
                             <Input name="feedback" placeholder="Overall impression..." />
                           </div>
                           <div className="sm:col-span-3">
-                            <Button type="submit" size="sm" variant="gradient">
+                            <Button type="submit" size="sm" variant="default">
                               <CheckCircle2 className="mr-1.5 h-4 w-4" />
                               Mark complete &amp; save to student history
                             </Button>

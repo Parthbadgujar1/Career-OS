@@ -22,7 +22,7 @@ export default function RegisterForm() {
   return (
     <Card className="w-full max-w-md animate-scale-in">
       <CardHeader>
-        <CardTitle>Create your account</CardTitle>
+        <CardTitle className="font-serif text-2xl text-slate-900">Create your account</CardTitle>
         <CardDescription>Start from Day 1 — it only gets easier the earlier you begin.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -72,7 +72,7 @@ export default function RegisterForm() {
               <option value="MENTOR">Mentor</option>
             </Select>
           </div>
-          <Button type="submit" className="w-full" variant="gradient" disabled={pending}>
+          <Button type="submit" className="w-full" disabled={pending}>
             {pending ? "Creating account..." : "Create account"}
           </Button>
           <p className="text-center text-sm text-slate-500">

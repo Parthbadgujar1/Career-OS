@@ -145,7 +145,7 @@ export default async function AdminPage() {
     <div className="mx-auto max-w-6xl p-6 space-y-6 animate-fade-in-up">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900">Admin Dashboard</h1>
           <p className="text-sm text-slate-500">Platform analytics · signed in as {admin.email}</p>
         </div>
         <Badge variant="secondary" className="hidden sm:inline-flex">
@@ -221,8 +221,8 @@ export default async function AdminPage() {
 
       {/* AI Platform Insights */}
       <Suspense fallback={
-        <Card className="animate-pulse border-purple-50 bg-purple-50/10">
-          <CardContent className="h-48 flex items-center justify-center text-sm text-purple-400 font-medium">
+        <Card className="animate-pulse border-amber-50 bg-amber-50/10">
+          <CardContent className="h-48 flex items-center justify-center text-sm text-amber-600 font-medium">
             <Sparkles className="h-5 w-5 animate-spin mr-2" /> Loading platform AI insights...
           </CardContent>
         </Card>

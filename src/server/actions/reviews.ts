@@ -6,6 +6,10 @@ import { requireStudentProfile } from "@/lib/auth-helper";
 import { reviewResume, reviewProfile, recommendProjects } from "@/lib/ai/reviews";
 import { fromJson } from "@/lib/utils";
 import { snapshotReadiness } from "@/lib/scoring/readiness";
+import { aiConfigured, AiQuotaError } from "@/lib/ai/client";
+
+const MAX_RESUME_TEXT_CHARS = 60_000;
+const MAX_RESUME_PDF_BYTES = 5_242_880; // 5 MB
 
 async function runResumeReview(
   profileId: string,
@@ -30,7 +34,7 @@ async function runResumeReview(
   let sectionAnalysis: Array<{ section: string; status: string; note: string }> = [];
   let keywordGaps: string[] = [];
 
-  if (process.env.GEMINI_API_KEY) {
+  if (aiConfigured()) {
     try {
       const review = await reviewResume({
         role,
@@ -50,6 +54,7 @@ async function runResumeReview(
         resumeText = review.extractedText;
       }
     } catch (e) {
+      if (e instanceof AiQuotaError) throw e;
       console.error("[reviews] AI resume review failed", e);
     }
   }
@@ -88,13 +93,16 @@ export async function reviewResumeAction(
   formData: FormData
 ): Promise<{ ok: true; resumeId: string; atsScore: number; summary: string; content: string; missingSkills: string[]; suggestions: string[]; impactStatements: string[]; sectionAnalysis: Array<{ section: string; status: string; note: string }>; keywordGaps: string[] } | { error: string }> {
   const { profile } = await requireStudentProfile();
-  const resumeText = (formData.get("resumeText") as string) || "";
+  const resumeText = ((formData.get("resumeText") as string) || "").slice(0, MAX_RESUME_TEXT_CHARS);
   const role = (formData.get("role") as string) || profile.targetRole || "";
 
   const file = formData.get("resumeFile") as File | null;
   let base64Data: string | null = null;
 
   if (file && file.size > 0) {
+    if (file.size > MAX_RESUME_PDF_BYTES) {
+      return { error: "Resume file is too large — please upload a PDF smaller than 5 MB." };
+    }
     try {
       const buffer = Buffer.from(await file.arrayBuffer());
       base64Data = buffer.toString("base64");
@@ -118,7 +126,13 @@ export async function reviewResumeAction(
     },
   });
 
-  const result = await runResumeReview(profile.id, role, resumeText, base64Data, resume.id);
+  let result;
+  try {
+    result = await runResumeReview(profile.id, role, resumeText, base64Data, resume.id);
+  } catch (e) {
+    if (e instanceof AiQuotaError) return { error: e.message };
+    throw e;
+  }
 
   await snapshotReadiness(prisma, profile.id);
   revalidatePath("/app/reviews");
@@ -158,7 +172,7 @@ export async function buildResumeAction(
   if (skills) sections.push(`## Skills\n${skills}`);
   if (projects) sections.push(`## Projects\n${projects}`);
   if (achievements) sections.push(`## Achievements\n${achievements}`);
-  const resumeText = sections.join("\n\n");
+  const resumeText = sections.join("\n\n").slice(0, MAX_RESUME_TEXT_CHARS);
 
   const version = (await prisma.resume.count({ where: { studentId: profile.id } })) + 1;
   const resume = await prisma.resume.create({
@@ -193,8 +207,8 @@ export async function reviewProfileAction(
 ): Promise<{ ok: true; score: number; summary: string; findings: string[]; suggestions: string[]; sectionAnalysis: Array<{ section: string; status: string; note: string }>; whatToAdd: Array<{ item: string; priority: string; reason: string }> } | { error: string }> {
   const { profile } = await requireStudentProfile();
   const platform = (formData.get("platform") as "LINKEDIN" | "GITHUB") || "LINKEDIN";
-  const url = (formData.get("url") as string) || "";
-  const details = (formData.get("details") as string) || "";
+  const url = ((formData.get("url") as string) || "").slice(0, 2048);
+  const details = ((formData.get("details") as string) || "").slice(0, 20_000);
 
   let evaluatedDetails = details;
 
@@ -265,7 +279,7 @@ ${details || "LinkedIn URL provided. Performing positioning evaluation based on 
   let sectionAnalysis: Array<{ section: string; status: string; note: string }> = [];
   let whatToAdd: Array<{ item: string; priority: string; reason: string }> = [];
 
-  if (process.env.GEMINI_API_KEY) {
+  if (aiConfigured()) {
     try {
       const review = await reviewProfile({
         platform,
@@ -280,6 +294,7 @@ ${details || "LinkedIn URL provided. Performing positioning evaluation based on 
       sectionAnalysis = review.sectionAnalysis ?? [];
       whatToAdd = review.whatToAdd ?? [];
     } catch (e) {
+      if (e instanceof AiQuotaError) return { error: e.message };
       console.error("[reviews] AI profile review failed", e);
     }
   }

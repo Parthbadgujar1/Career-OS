@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
+import { siteUrl } from "@/lib/site";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://careeros.in";
+const BASE_URL = siteUrl();
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();

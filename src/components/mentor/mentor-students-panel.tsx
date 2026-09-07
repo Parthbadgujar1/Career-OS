@@ -51,14 +51,14 @@ function FeedbackComposer({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Write feedback — the student will see it as a notification..."
-        className="min-h-[70px] bg-white"
+        className="min-h-[70px] bg-surface"
       />
       <div className="flex justify-end gap-2">
         <Button variant="ghost" size="sm" onClick={onCancel}>
           <X className="h-4 w-4 mr-1" />
           Cancel
         </Button>
-        <Button variant="gradient" size="sm" disabled={!value.trim() || pending} onClick={onSend}>
+        <Button variant="default" size="sm" disabled={!value.trim() || pending} onClick={onSend}>
           {pending ? "Sending..." : "Send feedback"}
           <Send className="h-3.5 w-3.5 ml-1" />
         </Button>
@@ -163,11 +163,11 @@ export function MentorStudentsPanel({ students }: { students: MentorStudentRow[]
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-amber-200/60 text-left text-xs uppercase tracking-wide text-slate-500">
-                  <th className="py-2 px-4 pr-4">Student</th>
-                  <th className="py-2 pr-4">Readiness</th>
-                  <th className="py-2 pr-4">Signal</th>
-                  <th className="py-2 pr-4">What they need</th>
-                  <th className="py-2">Action</th>
+                  <th scope="col" className="py-2 px-4 pr-4 font-semibold">Student</th>
+                  <th scope="col" className="py-2 pr-4 font-semibold">Readiness</th>
+                  <th scope="col" className="py-2 pr-4 font-semibold">Signal</th>
+                  <th scope="col" className="py-2 pr-4 font-semibold">What they need</th>
+                  <th scope="col" className="py-2 font-semibold">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -217,18 +217,18 @@ export function MentorStudentsPanel({ students }: { students: MentorStudentRow[]
         </div>
       )}
 
-      <div className="mt-6 overflow-x-auto">
+      <div className="mt-6 overflow-x-auto rounded-xl border border-slate-200/80">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b text-left text-xs uppercase tracking-wide text-slate-400">
-              <th className="pb-2 pr-4">Student</th>
-              <th className="pb-2 pr-4">Target Role</th>
-              <th className="pb-2 pr-4">Readiness</th>
-              <th className="pb-2 pr-4">Weak Skills</th>
-              <th className="pb-2 pr-4">Streak</th>
-              <th className="pb-2 pr-4">Pending Tasks</th>
-              <th className="pb-2 pr-4">Status</th>
-              <th className="pb-2">Contact</th>
+            <tr className="border-b border-slate-200 bg-slate-50/70 text-left text-xs uppercase tracking-wide text-slate-500">
+              <th scope="col" className="py-3 pr-4 pl-4 font-semibold">Student</th>
+              <th scope="col" className="py-3 pr-4 font-semibold">Target Role</th>
+              <th scope="col" className="py-3 pr-4 font-semibold">Readiness</th>
+              <th scope="col" className="py-3 pr-4 font-semibold">Weak Skills</th>
+              <th scope="col" className="py-3 pr-4 font-semibold">Streak</th>
+              <th scope="col" className="py-3 pr-4 font-semibold">Pending Tasks</th>
+              <th scope="col" className="py-3 pr-4 font-semibold">Status</th>
+              <th scope="col" className="py-3 pr-4 font-semibold">Contact</th>
             </tr>
           </thead>
           <tbody>
@@ -236,7 +236,7 @@ export function MentorStudentsPanel({ students }: { students: MentorStudentRow[]
               const sig = signalFor(s.readinessScore);
               return (
                 <tr key={s.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors">
-                  <td className="py-2 pr-4">
+                  <td className="py-2 pr-4 pl-4">
                     <p className="font-medium">{s.name}</p>
                     <p className="text-xs text-slate-400">{s.email}</p>
                   </td>

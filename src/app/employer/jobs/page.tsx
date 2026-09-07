@@ -27,7 +27,7 @@ export default async function EmployerJobsPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold">Posted Jobs</h1>
+        <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900">Posted Jobs</h1>
         <p className="text-sm text-slate-500">Manage your job listings and track applicants</p>
       </div>
 
@@ -119,7 +119,7 @@ export default async function EmployerJobsPage() {
                 <Label htmlFor="description">Description</Label>
                 <Textarea id="description" name="description" rows={3} placeholder="What should students know?" />
               </div>
-              <Button type="submit" variant="gradient" className="w-full">
+              <Button type="submit" variant="default" className="w-full">
                 Post Job
               </Button>
             </form>

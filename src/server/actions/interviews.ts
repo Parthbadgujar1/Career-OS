@@ -8,7 +8,10 @@ import { snapshotReadiness } from "@/lib/scoring/readiness";
 import { fromJson } from "@/lib/utils";
 import { generateObject } from "ai";
 import { z } from "zod";
-import { generateWithFailover } from "@/lib/ai/client";
+import { generateWithFailover, aiConfigured, AiQuotaError } from "@/lib/ai/client";
+
+const MAX_ANSWER_CHARS = 3_000;
+const MAX_QUESTIONS = 20;
 
 type AiType = "TECHNICAL" | "HR" | "BEHAVIORAL";
 
@@ -140,11 +143,15 @@ export async function submitAiInterviewAction(
 > {
   const { profile } = await requireStudentProfile();
   const type = ((formData.get("type") as string) || "TECHNICAL") as AiType;
-  const role = (formData.get("role") as string) || profile.targetRole || "";
+  const role = ((formData.get("role") as string) || profile.targetRole || "").slice(0, 200);
   const answersRaw = fromJson<Record<string, string>>((formData.get("answers") as string) ?? "{}", {});
   const questionsRaw = fromJson<Array<{ id: string; question: string; idealKeywords: string[]; maxScore: number }>>(formData.get("questions") as string, []);
 
-  const bank = questionsRaw.length > 0 ? questionsRaw : (AI_QUESTION_BANK[type] ?? AI_QUESTION_BANK.TECHNICAL);
+  for (const key of Object.keys(answersRaw)) {
+    answersRaw[key] = (answersRaw[key] || "").slice(0, MAX_ANSWER_CHARS);
+  }
+
+  const bank = (questionsRaw.length > 0 ? questionsRaw : (AI_QUESTION_BANK[type] ?? AI_QUESTION_BANK.TECHNICAL)).slice(0, MAX_QUESTIONS);
   const criteria = INTERVIEW_CRITERIA[type] ?? INTERVIEW_CRITERIA.TECHNICAL;
 
   let percent = 0;
@@ -153,7 +160,7 @@ export async function submitAiInterviewAction(
   let feedbackList: string[] = [];
   let weakAreas: string[] = [];
 
-  if (process.env.GEMINI_API_KEY) {
+  if (aiConfigured()) {
     try {
       const qaFormatted = bank.map((q) => {
         const answer = answersRaw[q.id] || "(no answer provided)";
@@ -212,6 +219,7 @@ Return the grading matching the schema.`;
         };
       }
     } catch (e) {
+      if (e instanceof AiQuotaError) return { error: e.message };
       console.error("[interviews] AI grading failed, falling back to deterministic", e);
     }
   }
@@ -266,7 +274,7 @@ export async function generateAiInterviewQuestionsAction(
 ): Promise<{ ok: true; questions: Array<{ id: string; question: string; idealKeywords: string[]; maxScore: number }> } | { error: string }> {
   const { profile } = await requireStudentProfile();
 
-  if (!process.env.GEMINI_API_KEY) {
+  if (!aiConfigured() || !role.trim()) {
     const bank = AI_QUESTION_BANK[type] ?? AI_QUESTION_BANK.TECHNICAL;
     return { ok: true, questions: bank };
   }

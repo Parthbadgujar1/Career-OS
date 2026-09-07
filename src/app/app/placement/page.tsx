@@ -83,7 +83,7 @@ export default async function PlacementPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Placement Preparation</h1>
+        <h1 className="font-serif text-3xl font-medium tracking-tight">Placement Preparation</h1>
         <p className="text-sm text-slate-500">
           Aptitude, DSA, technical subjects, HR prep and company-specific plans — all in one place.
         </p>
@@ -120,7 +120,7 @@ export default async function PlacementPage() {
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">Technical practice</h2>
         <div className="grid gap-3 md:grid-cols-2">
           <Link href="/app/coding">
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+            <div className="rounded-xl border border-slate-200 bg-surface p-5 shadow-sm transition-shadow hover:shadow-md">
               <p className="font-semibold">Coding Practice</p>
               <p className="mt-1 text-sm text-slate-500">
                 Daily problems across Arrays, Strings, Linked Lists, Trees, DP and more — adapted to your weak topics.
@@ -128,7 +128,7 @@ export default async function PlacementPage() {
             </div>
           </Link>
           <Link href="/app/assessment">
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+            <div className="rounded-xl border border-slate-200 bg-surface p-5 shadow-sm transition-shadow hover:shadow-md">
               <p className="font-semibold">AI Skill Assessment</p>
               <p className="mt-1 text-sm text-slate-500">
                 Adaptive questions that grade your skills against your target career and identify your gaps.
@@ -142,7 +142,7 @@ export default async function PlacementPage() {
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">Company-specific prep</h2>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {COMPANIES.map((c) => (
-            <div key={c.name} className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div key={c.name} className="flex flex-col rounded-xl border border-slate-200 bg-surface p-5 shadow-sm">
               <div className="flex items-start justify-between gap-2">
                 <p className="font-semibold">{c.name}</p>
                 <Badge variant="secondary">{c.sector}</Badge>
@@ -171,7 +171,7 @@ export default async function PlacementPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="space-y-3 lg:col-span-2">
             {HR_QUESTIONS.map((h) => (
-              <div key={h.q} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div key={h.q} className="rounded-xl border border-slate-200 bg-surface p-4 shadow-sm">
                 <p className="font-medium">{h.q}</p>
                 <p className="mt-1 text-sm text-slate-500">{h.tip}</p>
               </div>

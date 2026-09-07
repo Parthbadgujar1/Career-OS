@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { loginAction } from "@/server/actions/auth";
+import { safeCallbackUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
@@ -23,7 +24,7 @@ function GoogleIcon() {
 export default function LoginForm({ showGoogle = true }: { showGoogle?: boolean }) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const callbackUrl = searchParams.get("callbackUrl") || "/app";
+  const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
   const [state, formAction, pending] = useActionState(loginAction, null);
 
   useEffect(() => {
@@ -37,14 +38,14 @@ export default function LoginForm({ showGoogle = true }: { showGoogle?: boolean 
   return (
     <Card className="w-full max-w-md animate-scale-in">
       <CardHeader>
-        <CardTitle>Log in</CardTitle>
+        <CardTitle className="font-serif text-2xl text-slate-900">Log in</CardTitle>
         <CardDescription>Continue your career journey.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           {showGoogle && (
             <>
-              <Link href={googleHref} className="flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
+              <Link href={googleHref} className="flex w-full items-center justify-center rounded-lg border border-slate-200 bg-surface px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
                 <GoogleIcon /> Continue with Google
               </Link>
 
@@ -72,7 +73,7 @@ export default function LoginForm({ showGoogle = true }: { showGoogle?: boolean 
               </div>
               <Input id="password" name="password" type="password" required />
             </div>
-            <Button type="submit" className="w-full" variant="gradient" disabled={pending}>
+            <Button type="submit" className="w-full" disabled={pending}>
               {pending ? "Logging in..." : "Log in"}
             </Button>
             <p className="text-center text-sm text-slate-500">
@@ -81,14 +82,6 @@ export default function LoginForm({ showGoogle = true }: { showGoogle?: boolean 
                 Create an account
               </Link>
             </p>
-            <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
-              Demo accounts: <br />
-              Student — student@carrer.com / student123
-              <br />
-              Admin — admin@carrer.com / admin123
-              <br />
-              Mentor — mentor@carrer.com / mentor123
-            </div>
           </form>
         </div>
       </CardContent>

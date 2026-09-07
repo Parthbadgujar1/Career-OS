@@ -27,7 +27,7 @@ export default async function ReportsPage() {
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Weekly Reports</h1>
+          <h1 className="font-serif text-3xl font-medium tracking-tight">Weekly Reports</h1>
           <p className="text-sm text-slate-500">
             Analyze completion, consistency, weak areas and next-week priorities.
           </p>        </div>
@@ -58,7 +58,7 @@ export default async function ReportsPage() {
       )}
 
       {reports.length === 0 && (
-        <p className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
+        <p className="rounded-lg border border-slate-200 bg-surface p-6 text-center text-sm text-slate-500">
           No reports yet. Work through your daily tasks for a week, then generate your first report.
         </p>
       )}

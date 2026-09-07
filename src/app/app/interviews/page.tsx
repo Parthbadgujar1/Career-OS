@@ -36,7 +36,7 @@ export default async function InterviewsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold">Mock Interviews</h1>
+        <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900">Mock Interviews</h1>
         <p className="text-sm text-slate-500">
           Practice with AI or book a live Google Meet session with a mentor — all graded against real role criteria.
         </p>
@@ -85,7 +85,7 @@ export default async function InterviewsPage() {
                       <>
                         {b.slot.meetUrl && (
                           <a href={b.slot.meetUrl} target="_blank" rel="noopener noreferrer">
-                            <Button size="sm" variant="gradient"><Video className="mr-1.5 h-4 w-4" />Join Meet</Button>
+                            <Button size="sm" variant="default"><Video className="mr-1.5 h-4 w-4" />Join Meet</Button>
                           </a>
                         )}
                         <form action={cancelInterviewBookingAction.bind(null, b.slotId)}>
@@ -115,7 +115,7 @@ export default async function InterviewsPage() {
             </Card>
           ))}
           {bookings.length === 0 && (
-            <p className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
+            <p className="rounded-lg border border-slate-200 bg-surface p-6 text-center text-sm text-slate-500">
               No mentor sessions yet. Book a live slot above to get real interview feedback.
             </p>
           )}
@@ -168,7 +168,7 @@ export default async function InterviewsPage() {
             );
           })}
           {interviews.length === 0 && (
-            <p className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
+            <p className="rounded-lg border border-slate-200 bg-surface p-6 text-center text-sm text-slate-500">
               No practice sessions yet. Take an AI interview above to start.
             </p>
           )}

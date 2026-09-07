@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export async function GET() {
   const checks: Record<string, string> = {};
@@ -14,20 +15,25 @@ export async function GET() {
     healthy = false;
   }
 
-  // Environment variables check
-  const requiredEnvVars = ["DATABASE_URL", "AUTH_SECRET"];
-  const optionalEnvVars = ["GEMINI_API_KEY", "GROQ_API_KEY", "OPENAI_API_KEY", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "RESEND_API_KEY"];
-  const envStatus: Record<string, string> = {};
-  for (const key of requiredEnvVars) {
-    envStatus[key] = process.env[key] ? "set" : "MISSING";
-    if (!process.env[key]) {
-      healthy = false;
+  // Environment/configuration detail is only exposed to authenticated admin or
+  // mentor staff, not to public uptime monitors.
+  const session = await auth();
+  const role = session?.user?.role;
+  if (role === "ADMIN" || role === "MENTOR") {
+    const requiredEnvVars = ["DATABASE_URL", "AUTH_SECRET"];
+    const optionalEnvVars = ["GEMINI_API_KEY", "GROQ_API_KEY", "OPENAI_API_KEY", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "RESEND_API_KEY"];
+    const envStatus: Record<string, string> = {};
+    for (const key of requiredEnvVars) {
+      envStatus[key] = process.env[key] ? "set" : "MISSING";
+      if (!process.env[key]) {
+        healthy = false;
+      }
     }
+    for (const key of optionalEnvVars) {
+      envStatus[key] = process.env[key] ? "set" : "not set";
+    }
+    checks.env = JSON.stringify(envStatus);
   }
-  for (const key of optionalEnvVars) {
-    envStatus[key] = process.env[key] ? "set" : "not set";
-  }
-  checks.env = JSON.stringify(envStatus);
 
   return NextResponse.json(
     {

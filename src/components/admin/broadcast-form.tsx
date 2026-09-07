@@ -49,7 +49,7 @@ export function BroadcastForm() {
               {state.error}
             </p>
           )}
-          <Button type="submit" variant="gradient" disabled={isPending} className="w-full">
+          <Button type="submit" variant="default" disabled={isPending} className="w-full">
             <Megaphone className="h-4 w-4 mr-2" />
             {isPending ? "Sending..." : "Broadcast Now"}
           </Button>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, CalendarCheck, ListTodo, TrendingUp, Sparkles, Target, Map, RefreshCw, Brain, ShieldCheck, Layers } from "lucide-react";
+import { ArrowRight, Brain, CalendarCheck, CalendarDays, ChevronRight, Flame, Layers, ListTodo, Map, RefreshCw, ShieldCheck, Sparkles, Target, TrendingUp } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
 import { computeReadiness, readinessLabel } from "@/lib/scoring/readiness";
@@ -16,8 +16,10 @@ import { restartAssessmentAction } from "@/server/actions/skills-assessment";
 
 export const dynamic = "force-dynamic";
 
+const PRIORITY_ORDER: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+
 export default async function OverviewPage() {
-  const { profile } = await requireStudentProfile();
+  const { user, profile } = await requireStudentProfile();
 
   if (!profile.onboardedAt) redirect("/app/assessment");
 
@@ -44,7 +46,10 @@ export default async function OverviewPage() {
 
   const streak = await bumpStreak(prisma, profile.id);
 
-  const pendingCount = tasks.filter((t) => t.status === "PENDING").length;
+  const pendingTasks = tasks.filter((t) => t.status === "PENDING").sort(
+    (a, b) => (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9)
+  );
+  const nextStep = pendingTasks[0];
   const completedThisWeek = tasks.filter((t) => t.status === "COMPLETED").length;
   const readinessMeta = readinessLabel(readiness.total);
 
@@ -61,29 +66,41 @@ export default async function OverviewPage() {
   const weekCompleted = weekItems.filter((i) => i.status === "COMPLETED").length;
   const weekPct = weekItems.length > 0 ? Math.round((weekCompleted / weekItems.length) * 100) : 0;
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const firstName = (user.name || "there").trim().split(" ")[0] || "there";
+  const todayLabel = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
+
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3 animate-fade-in-up">
+    <div className="mx-auto max-w-6xl space-y-8">
+      {/* ─── Hero ─── */}
+      <div className="flex flex-wrap items-end justify-between gap-4 animate-fade-in-up">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Overview</h1>
-          <p className="text-sm text-slate-500">
-            {profile.targetRole ? (
-              <span className="flex items-center gap-1.5">
-                <Target className="h-3.5 w-3.5 text-indigo-500" />
-                Target role: <span className="font-semibold text-slate-700">{profile.targetRole}</span>
-              </span>
-            ) : "Complete onboarding to set your goal."}
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-600">{todayLabel}</p>
+          <h1 className="mt-2 font-serif text-3xl font-medium tracking-tight text-slate-900 sm:text-4xl">
+            {greeting}, {firstName}
+            <span className="text-slate-300">.</span>
+          </h1>
+          <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
+            <Target className="h-3.5 w-3.5 text-indigo-500" />
+            Heading toward{" "}
+            <span className="font-semibold text-slate-700">{profile.targetRole || "your target role"}</span>
+            {readinessMeta.label && (
+              <>
+                {" "}· <span className="capitalize">{readinessMeta.label.toLowerCase()}</span>
+              </>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <form action={changePathAction}>
-            <Button type="submit" variant="ghost" size="sm" className="text-slate-500 hover:text-amber-600 hover:bg-amber-50">
+            <Button type="submit" variant="ghost" size="sm" className="text-slate-500 hover:text-amber-700 hover:bg-amber-50">
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
               Change path
             </Button>
           </form>
           <Link href="/app/tasks">
-            <Button variant="gradient" size="sm" className="group">
+            <Button variant="default" size="sm" className="group">
               <ListTodo className="h-4 w-4" /> Open weekly plan
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </Button>
@@ -91,43 +108,60 @@ export default async function OverviewPage() {
         </div>
       </div>
 
-      <Card className="overflow-hidden border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-purple-50 animate-fade-in-up">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-violet-500" />
-        <CardContent className="flex flex-wrap items-center justify-between gap-4 py-5 pl-5">
-          <div className="flex items-center gap-4">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25">
-              <Brain className="h-6 w-6" />
-            </span>
-            <div>
-              <p className="text-base font-bold text-slate-800">AI Skill Assessment</p>
-              <p className="text-sm text-slate-500">
-                {skillCount > 0
-                  ? `${skillCount} skills graded by AI against "${profile.targetRole}" — your skill profile is live.`
-                  : "Re-run the adaptive assessment to re-grade your skills against your target career."}
-              </p>
-            </div>
-          </div>
-          <div className="flex w-full items-center gap-3 sm:w-auto">
-            <Link href="/app/skills" className="hidden items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors sm:flex">
-              <Layers className="h-4 w-4" />
-              Skill profile
-            </Link>
-            <form action={restartAssessmentAction}>
-              <Button type="submit" variant="gradient" size="sm">
-                <ShieldCheck className="h-4 w-4 mr-1.5" />
-                Check My Career Readiness
-              </Button>
-            </form>
-          </div>
-        </CardContent>
-      </Card>
+      {/* ─── Next step ─── */}
+      <section className="animate-fade-in-up delay-75">
+        <Link href="/app/tasks" className="group block">
+          <Card className={cnCallout(nextStep ? false : true)}>
+            <CardContent className="flex flex-wrap items-center justify-between gap-4 py-5 pl-5">
+              <div className="flex items-center gap-4">
+                <span
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
+                    nextStep ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
+                  }`}
+                >
+                  {nextStep ? <ChevronRight className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
+                </span>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-600">
+                    {nextStep ? "Your next step" : "All caught up for now"}
+                  </p>
+                  {nextStep ? (
+                    <>
+                      <p className="mt-1 font-serif text-lg font-medium leading-snug text-slate-900">{nextStep.title}</p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                        <Badge variant="secondary" className="text-[10px]">
+                          {CATEGORY_LABELS[nextStep.category as keyof typeof CATEGORY_LABELS] ?? nextStep.category}
+                        </Badge>
+                        {nextStep.priority === "HIGH" && <Badge variant="warning" className="text-[10px]">High priority</Badge>}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-500">
+                      Nothing pending this week — open your weekly plan to plan ahead.
+                    </p>
+                  )}
+                </div>
+              </div>
+              {nextStep && (
+                <span className="flex items-center gap-1 text-sm font-semibold text-indigo-600 group-hover:text-indigo-700 transition-colors">
+                  Start now <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </span>
+              )}
+            </CardContent>
+          </Card>
+        </Link>
+      </section>
 
+      {/* ─── Stat strip ─── */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="animate-fade-in-up delay-75 overflow-hidden">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500" />
+        <Card className="animate-fade-in-up delay-100 overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-0.5 bg-indigo-500" />
           <CardContent className="pt-6">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Readiness Score</p>
-            <p className="mt-2 text-3xl font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{readiness.total}/100</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Readiness</p>
+            <p className="mt-2 font-serif text-3xl font-semibold text-slate-900">
+              {readiness.total}
+              <span className="ml-1 text-base font-sans text-slate-400">/100</span>
+            </p>
             <Badge
               variant={
                 readinessMeta.color === "emerald" || readinessMeta.color === "green"
@@ -145,83 +179,88 @@ export default async function OverviewPage() {
           </CardContent>
         </Card>
 
-        <Card className="animate-fade-in-up delay-100 overflow-hidden">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-500" />
+        <Card className="animate-fade-in-up delay-150 overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-0.5 bg-amber-500" />
           <CardContent className="pt-6">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">This week&apos;s tasks</p>
-            <p className="mt-2 text-3xl font-extrabold text-slate-900">{pendingCount}</p>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Tasks pending</p>
+            <p className="mt-2 font-serif text-3xl font-semibold text-slate-900">{pendingTasks.length}</p>
+            <p className="mt-2 text-xs text-slate-400">
               <span className="font-semibold text-emerald-600">{completedThisWeek}</span> completed this week
             </p>
           </CardContent>
         </Card>
 
-        <Card className="animate-fade-in-up delay-150 overflow-hidden">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-500 to-amber-500" />
-          <CardContent className="pt-6">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Streak</p>
-            <p className="mt-2 flex items-center gap-2 text-3xl font-extrabold text-orange-500">
-              <span className="animate-bounce-gentle inline-block">🔥</span>
-              {streak} day{streak === 1 ? "" : "s"}
-            </p>
-            <p className="mt-1 text-xs text-slate-400">
-              Best <span className="font-semibold text-slate-600">{profile.bestStreak}</span>
-            </p>
-          </CardContent>
-        </Card>
-
         <Card className="animate-fade-in-up delay-200 overflow-hidden">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
-          <CardContent className="pt-6">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Roadmap week</p>
-            <p className="mt-2 text-3xl font-extrabold text-slate-900">
-              {roadmap ? currentWeek : "—"}
-            </p>
-            <p className="mt-1 text-xs text-slate-400">
-              of <span className="font-semibold text-slate-600">{roadmap?.totalWeeks ?? 12}</span> weeks
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-4 animate-fade-in-up delay-200 overflow-hidden">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 to-pink-500" />
+          <div className="absolute inset-x-0 top-0 h-0.5 bg-orange-500" />
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Week {currentWeek} progress
-                </p>
-                <p className="mt-2 text-3xl font-extrabold text-slate-900">{roadmapComplete ? "100%" : `${weekPct}%`}</p>
-                <p className="mt-1 text-xs text-slate-400">
-                  {roadmapComplete ? "Roadmap complete — fantastic work!" : `${weekCompleted}/${weekItems.length} milestones this week`}
-                </p>
-              </div>
-              <div className="text-right">
-                <Map className="h-8 w-8 text-indigo-300" />
-              </div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Streak</p>
+              <Flame className="h-3.5 w-3.5 text-orange-500" />
             </div>
-            <Progress value={weekPct} className="mt-3" />
+            <p className="mt-2 font-serif text-3xl font-semibold text-slate-900">{streak}</p>
+            <p className="mt-2 text-xs text-slate-400">
+              day{streak === 1 ? "" : "s"} · best <span className="font-semibold text-slate-600">{profile.bestStreak}</span>
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="animate-fade-in-up delay-300 overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-0.5 bg-blue-500" />
+          <CardContent className="pt-6">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Roadmap week</p>
+            <p className="mt-2 font-serif text-3xl font-semibold text-slate-900">
+              {roadmap ? currentWeek : "—"}
+              <span className="ml-1 text-base font-sans text-slate-400">
+                /{roadmap?.totalWeeks ?? 12}
+              </span>
+            </p>
+            <p className="mt-2 text-xs text-slate-400">weeks into your journey</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* ─── Journey progress ─── */}
+      <Card className="animate-fade-in-up delay-300 overflow-hidden">
+        <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500" />
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+                <Map className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Week {currentWeek} of {roadmap?.totalWeeks ?? 12}
+                </p>
+                <p className="mt-1 font-serif text-lg font-medium text-slate-900">
+                  {roadmapComplete ? "Roadmap complete — fantastic work" : `${weekCompleted}/${weekItems.length} milestones done this week`}
+                </p>
+              </div>
+            </div>
+            <p className="font-serif text-3xl font-semibold text-slate-900">{roadmapComplete ? "100%" : `${weekPct}%`}</p>
+          </div>
+          <Progress value={weekPct} className="mt-4" />
+        </CardContent>
+      </Card>
+
+      {/* ─── Progress test CTA ─── */}
       <Link href="/app/progress-test" className="block group">
         <Card
           className={`overflow-hidden transition-all hover:shadow-md animate-fade-in-up ${
-            testOverdue ? "border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50" : "border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50"
+            testOverdue ? "border-amber-300 bg-amber-50/60" : "border-slate-200 bg-surface"
           }`}
         >
           <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
             <div className="flex items-center gap-3">
               <span
                 className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                  testOverdue ? "bg-amber-100 text-amber-600" : "bg-indigo-100 text-indigo-600"
+                  testOverdue ? "bg-amber-100 text-amber-700" : "bg-indigo-100 text-indigo-700"
                 }`}
               >
                 <TrendingUp className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-sm font-bold text-slate-800">
+                <p className="text-sm font-semibold text-slate-800">
                   {testOverdue
                     ? "Progress test is due — retest your readiness now"
                     : lastTest
@@ -247,6 +286,39 @@ export default async function OverviewPage() {
         </Card>
       </Link>
 
+      {/* ─── AI skill assessment banner ─── */}
+      <Card className="animate-fade-in-up delay-300 overflow-hidden border-slate-200 bg-surface">
+        <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 to-cyan-500" />
+        <CardContent className="flex flex-wrap items-center justify-between gap-4 py-5 pl-5">
+          <div className="flex items-center gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+              <Brain className="h-6 w-6" />
+            </span>
+            <div>
+              <p className="font-serif text-lg font-medium text-slate-900">AI Skill Assessment</p>
+              <p className="text-sm text-slate-500">
+                {skillCount > 0
+                  ? `${skillCount} skills graded by AI against "${profile.targetRole}" — your skill profile is live.`
+                  : "Re-run the adaptive assessment to re-grade your skills against your target career."}
+              </p>
+            </div>
+          </div>
+          <div className="flex w-full items-center gap-3 sm:w-auto">
+            <Link href="/app/skills" className="hidden items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors sm:flex">
+              <Layers className="h-4 w-4" />
+              Skill profile
+            </Link>
+            <form action={restartAssessmentAction}>
+              <Button type="submit" variant="default" size="sm">
+                <ShieldCheck className="h-4 w-4 mr-1.5" />
+                Check my readiness
+              </Button>
+            </form>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ─── Lower sections ─── */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <Reveal variant="up">
@@ -268,7 +340,7 @@ export default async function OverviewPage() {
                   <div key={dim.key} className="animate-fade-in-up" style={{ animationDelay: `${300 + i * 40}ms` }}>
                     <div className="mb-1.5 flex items-center justify-between text-sm">
                       <span className="font-medium text-slate-600">{dim.label}</span>
-                      <span className="font-bold text-slate-800">
+                      <span className="font-semibold text-slate-800">
                         {readiness.dimensions[dim.key]}/100 <span className="text-xs text-slate-400">· {dim.weight}%</span>
                       </span>
                     </div>
@@ -283,7 +355,7 @@ export default async function OverviewPage() {
             <Card className="h-full">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <CalendarCheck className="h-4 w-4 text-emerald-500" />
+                  <CalendarCheck className="h-4 w-4 text-emerald-600" />
                   This week&apos;s plan
                 </CardTitle>
                 <CardDescription>{weekLabel()}</CardDescription>
@@ -296,12 +368,12 @@ export default async function OverviewPage() {
                   <Link
                     key={t.id}
                     href="/app/tasks"
-                    className="flex items-center justify-between rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:border-indigo-100 hover:bg-indigo-50/30 animate-fade-in-up"
+                    className="flex items-center justify-between rounded-lg border border-slate-200/70 px-3 py-2.5 transition-all hover:border-indigo-200 hover:bg-indigo-50/40 animate-fade-in-up"
                     style={{ animationDelay: `${350 + i * 50}ms` }}
                   >
                     <div className="flex items-center gap-2.5">
                       {t.status === "COMPLETED" ? (
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-[10px] font-bold">✓</span>
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold">✓</span>
                       ) : (
                         <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
                           t.priority === "HIGH" ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-400"
@@ -341,7 +413,7 @@ export default async function OverviewPage() {
               {latestReport ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <CalendarCheck className="h-4 w-4" />
+                    <CalendarDays className="h-4 w-4" />
                     {formatDate(latestReport.weekStart)} – {formatDate(latestReport.weekEnd)}
                   </div>
                   <p className="text-sm font-semibold text-slate-700">
@@ -354,7 +426,7 @@ export default async function OverviewPage() {
                     const priorities = fromJson<string[]>(latestReport.priorities, []);
                     if (priorities.length === 0) return null;
                     return (
-                      <div className="rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 px-4 py-3">
+                      <div className="rounded-xl bg-amber-50 border border-amber-200/70 px-4 py-3">
                         <p className="text-xs font-bold text-amber-700">Next week priorities</p>
                         <ul className="mt-1.5 list-inside list-disc text-xs leading-relaxed text-amber-700">
                           {priorities.slice(0, 3).map((p) => (
@@ -378,7 +450,7 @@ export default async function OverviewPage() {
             <Card className="h-full">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-purple-500" />
+                  <Sparkles className="h-4 w-4 text-purple-600" />
                   Updates
                 </CardTitle>
               </CardHeader>
@@ -387,7 +459,7 @@ export default async function OverviewPage() {
                   <p className="text-sm text-slate-500">No notifications yet.</p>
                 )}
                 {notifications.map((n, i) => (
-                  <Link key={n.id} href="/app/notifications" className="block rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:border-indigo-100 hover:bg-indigo-50/30 animate-fade-in-up" style={{ animationDelay: `${i * 50}ms` }}>
+                  <Link key={n.id} href="/app/notifications" className="block rounded-lg border border-slate-200/70 px-3 py-2.5 transition-all hover:border-indigo-200 hover:bg-indigo-50/40 animate-fade-in-up" style={{ animationDelay: `${i * 50}ms` }}>
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-3.5 w-3.5 text-indigo-500" />
                       <p className="text-sm font-semibold">{n.title}</p>
@@ -402,4 +474,10 @@ export default async function OverviewPage() {
       </div>
     </div>
   );
+}
+
+function cnCallout(allCaughtUp: boolean) {
+  return allCaughtUp
+    ? "overflow-hidden border-slate-200 bg-surface"
+    : "overflow-hidden border-amber-200/80 bg-amber-50/50";
 }

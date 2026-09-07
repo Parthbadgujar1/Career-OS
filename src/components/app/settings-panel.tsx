@@ -249,7 +249,7 @@ export function SettingsPanel({ profile }: { profile: SettingsProfile }) {
                 </p>
               )}
               {error && <p role="alert" className="text-sm font-medium text-rose-600">{error}</p>}
-              <Button type="submit" variant="gradient" disabled={isPending}>
+              <Button type="submit" disabled={isPending}>
                 {isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
                 Save Changes
               </Button>

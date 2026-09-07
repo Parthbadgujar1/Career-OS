@@ -181,7 +181,7 @@ export function OpportunitiesPanel({ initialData }: { initialData: OpportunityLo
         </div>
       )}
 
-      <Card className="border-indigo-100 bg-gradient-to-br from-white to-indigo-50/30">
+      <Card className="border-indigo-100 bg-indigo-50/40">
         <CardContent className="p-5">
           <div className="flex items-start gap-3">
             <Sparkles className="h-5 w-5 text-indigo-600 mt-0.5 shrink-0" />

@@ -98,7 +98,7 @@ export function SkillsPanel({
             ))}
           </Select>
         </div>
-        <Button variant="gradient" disabled={!selected || isPending} onClick={addSkill}>
+        <Button variant="default" disabled={!selected || isPending} onClick={addSkill}>
           {savedId === selected ? (
             <>
               <Check className="h-4 w-4 mr-2" />
@@ -125,7 +125,7 @@ export function SkillsPanel({
           </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {rows.map((row) => (
-              <div key={row.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white px-4 py-3">
+              <div key={row.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-surface px-4 py-3">
                 <div>
                   <p className="font-medium text-slate-800">{row.name}</p>
                   <p className="text-xs text-slate-400">{CATEGORY_LABELS[row.category] ?? row.category}</p>

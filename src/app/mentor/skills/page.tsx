@@ -37,7 +37,7 @@ export default async function MentorSkillsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold">Skill Gaps</h1>
+        <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900">Skill Gaps</h1>
         <p className="text-sm text-slate-500">Skills rated ≤2/5 across your {mentees.length} mentees</p>
       </div>
 

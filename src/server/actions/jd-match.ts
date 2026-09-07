@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
 import { matchJobDescription, type JdMatchResult } from "@/lib/ai/jd-match";
+import { AiQuotaError } from "@/lib/ai/client";
+
+const MAX_JD_TEXT_CHARS = 20_000;
 
 function isFullResult(r: JdMatchResult): boolean {
   return Array.isArray(r.nextSteps) && Array.isArray(r.matchBreakdown?.skills);
@@ -27,15 +30,23 @@ export async function matchJdAction(data: {
     };
   }
 
+  const jobTitle = (data.jobTitle || "").slice(0, 200);
+  const company = (data.company || "").slice(0, 200);
+  const jdText = (data.jdText || "").slice(0, MAX_JD_TEXT_CHARS);
+
+  if (!jdText.trim()) {
+    return { error: "Please paste a job description." };
+  }
+
   try {
-    const aiResult = await matchJobDescription(resume.content, data.jdText);
+    const aiResult = await matchJobDescription(resume.content, jdText);
 
     await prisma.jdMatchResult.create({
       data: {
         studentId: profile.id,
-        jobTitle: data.jobTitle || null,
-        company: data.company || null,
-        jdText: data.jdText,
+        jobTitle: jobTitle || null,
+        company: company || null,
+        jdText,
         matchScore: aiResult.matchScore,
         matchedSkills: JSON.stringify(aiResult.matchedSkills),
         missingKeywords: JSON.stringify(aiResult.missingSkills),
@@ -49,6 +60,7 @@ export async function matchJdAction(data: {
 
     return { ok: true, result: aiResult };
   } catch (e) {
+    if (e instanceof AiQuotaError) return { error: e.message };
     console.error("[matchJdAction] AI generation failed", e);
     return { error: "AI analysis failed. Please try again later." };
   }

@@ -1,7 +1,15 @@
 import "server-only";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { generateRoadmap, generateLongTermPlan, type RoadmapInput } from "@/lib/ai/roadmap";
+import {
+  generateRoadmap,
+  generateYearRoadmap,
+  yearFocusContext,
+  type RoadmapInput,
+  type CompletedWork,
+} from "@/lib/ai/roadmap";
 import { getCareerProfile } from "@/lib/careers";
+import { academicYearsForDegree, remainingAcademicYears, WEEKS_PER_YEAR } from "@/lib/constants";
+import { resourcesFor, type LearningResource } from "@/lib/engine/resources";
 
 export type MilestoneCategory = "LEARNING" | "CODING" | "PROJECT" | "PROFILE" | "INTERVIEW" | "OPPORTUNITY";
 
@@ -11,6 +19,8 @@ export interface Milestone {
   description: string;
   category: MilestoneCategory;
   relevance?: string;
+  academicYear?: number;
+  resources?: LearningResource[];
 }
 
 interface RoleTemplate {
@@ -173,58 +183,33 @@ function buildGenericMilestones(role: string, totalWeeks: number): Milestone[] {
   const learnPool = profile?.skillAreas.length ? profile.skillAreas : ["SOFT_SKILLS"];
   const evidence = profile?.evidence[0] ?? "a role-specific portfolio piece";
 
+  const push = (week: number, title: string, description: string, category: MilestoneCategory, topic: string) => {
+    milestones.push({
+      week,
+      title,
+      description,
+      category,
+      relevance: relevanceFor(category, topic, role),
+      resources: resourcesFor(role, category, topic),
+    });
+  };
+
   for (let w = 1; w <= totalWeeks; w++) {
     const area = learnPool[(w - 1) % learnPool.length];
     const topic = skills[(w - 1) % skills.length];
-    milestones.push({
-      week: w,
-      title: `Learn: ${area.split("_").map(cap).join(" ").toLowerCase()}`,
-      description: `Study the "${area}" foundation for ${role}: a short course, notes and a small worked example.`,
-      category: "LEARNING",
-      relevance: relevanceFor("LEARNING", area, role),
-    });
-    milestones.push({
-      week: w,
-      title: `Practice: ${topic}`,
-      description: `Apply ${topic} with a hands-on exercise or problem set related to ${role}.`,
-      category: "CODING",
-      relevance: relevanceFor("CODING", topic, role),
-    });
+    push(w, `Learn: ${area.split("_").map(cap).join(" ").toLowerCase()}`, `Study the "${area}" foundation for ${role}: a short course, notes and a small worked example.`, "LEARNING", area);
+    push(w, `Practice: ${topic}`, `Apply ${topic} with a hands-on exercise or problem set related to ${role}.`, "CODING", topic);
     if (w % 4 === 1 || (w >= 3 && w <= 5)) {
-      milestones.push({
-        week: w,
-        title: `Project: ${cap(evidence)}`,
-        description: `Work toward ${evidence} — the signal that stands out for ${role}.`,
-        category: "PROJECT",
-        relevance: relevanceFor("PROJECT", evidence, role),
-      });
+      push(w, `Project: ${cap(evidence)}`, `Work toward ${evidence} — the signal that stands out for ${role}.`, "PROJECT", evidence);
     }
     if (w === 6 || w === 10) {
-      milestones.push({
-        week: w,
-        title: `Profile: update resume + LinkedIn for ${role}`,
-        description: `Refresh your resume and LinkedIn to lead with ${focus === "projects" ? "projects and portfolios" : focus === "coreSkills" ? "core skills and certifications" : "relevant experience and evidence"}.`,
-        category: "PROFILE",
-        relevance: relevanceFor("PROFILE", role, role),
-      });
+      push(w, `Profile: update resume + LinkedIn for ${role}`, `Refresh your resume and LinkedIn to lead with ${focus === "projects" ? "projects and portfolios" : focus === "coreSkills" ? "core skills and certifications" : "relevant experience and evidence"}.`, "PROFILE", role);
     }
     if (w === 8 || w === 11) {
-      milestones.push({
-        week: w,
-        title: `Interview: ${role} skill check`,
-        description: `Mock interview or structured self-test on the ${role} topics covered so far.`,
-        category: "INTERVIEW",
-        relevance: relevanceFor("INTERVIEW", role, role),
-      });
+      push(w, `Interview: ${role} skill check`, `Mock interview or structured self-test on the ${role} topics covered so far.`, "INTERVIEW", role);
     }
     if (w === 4 || w === 9) {
-      milestones.push({
-        week: w,
-        title: `Opportunity: save ${role}-relevant internship/job`,
-        description: "Browse Unstop/Internshala/LinkedIn and save at least one matching opportunity.",
-        category: "OPPORTUNITY",
-        relevance: relevanceFor("OPPORTUNITY", role, role),
-      });
+      push(w, `Opportunity: save ${role}-relevant internship/job`, "Browse Unstop/Internshala/LinkedIn and save at least one matching opportunity.", "OPPORTUNITY", role);
     }
   }
   return milestones.sort((a, b) => a.week - b.week);
@@ -237,74 +222,61 @@ function cap(s: string): string {
 function buildMilestones(t: RoleTemplate, totalWeeks: number, role: string): Milestone[] {
   const milestones: Milestone[] = [];
   let projectIdx = 0;
+  const push = (week: number, title: string, description: string, category: MilestoneCategory, topic: string) => {
+    milestones.push({
+      week,
+      title,
+      description,
+      category,
+      relevance: relevanceFor(category, topic, role),
+      resources: resourcesFor(role, category, topic),
+    });
+  };
   for (let w = 1; w <= totalWeeks; w++) {
     const track = t.track[(w - 1) % t.track.length];
     const coding = t.codingTopics[(w - 1) % t.codingTopics.length];
-    milestones.push({
-      week: w,
-      title: `Learn: ${track}`,
-      description: `Study ${track} for this week. Follow a short free course, take notes and build a small example.`,
-      category: "LEARNING",
-      relevance: relevanceFor("LEARNING", track, role),
-    });
-    milestones.push({
-      week: w,
-      title: `Code: ${coding} practice`,
-      description: `Solve at least 2 problems on ${coding} on a platform you prefer (LeetCode/HackerRank/GFG).`,
-      category: "CODING",
-      relevance: relevanceFor("CODING", coding, role),
-    });
+    push(w, `Learn: ${track}`, `Study ${track} for this week. Follow a short free course, take notes and build a small example.`, "LEARNING", track);
+    push(w, `Code: ${coding} practice`, `Solve at least 2 problems on ${coding} on a platform you prefer (LeetCode/HackerRank/GFG).`, "CODING", coding);
     const active = t.projects.filter((p) => p.startWeek <= w && p.endWeek >= w);
     if (active.length > 0) {
       const p = active[0];
-      milestones.push({
-        week: w,
-        title: `Project: ${p.title}`,
-        description: p.description,
-        category: "PROJECT",
-        relevance: relevanceFor("PROJECT", p.title, role),
-      });
+      push(w, `Project: ${p.title}`, p.description, "PROJECT", p.title);
     } else if (projectIdx < t.projects.length && w > t.projects[projectIdx].endWeek) {
       projectIdx++;
     }
   }
-  // sprinkle profile & interview & opportunity
   const profileWeeks = [2, 6, 10, 12];
   for (const w of profileWeeks) {
     if (w <= totalWeeks) {
       const text = t.profileWork[(w - 1) % t.profileWork.length];
-      milestones.push({
-        week: w,
-        title: `Profile: ${text}`,
-        description: text,
-        category: "PROFILE",
-        relevance: relevanceFor("PROFILE", text, role),
-      });
+      push(w, `Profile: ${text}`, text, "PROFILE", text);
     }
   }
   [8, 11].forEach((w) => {
     if (w <= totalWeeks) {
-      milestones.push({
-        week: w,
-        title: "Interview: skill check",
-        description: "Attempt a mock interview or self-test on topics covered so far.",
-        category: "INTERVIEW",
-        relevance: relevanceFor("INTERVIEW", "skill check", role),
-      });
+      push(w, "Interview: skill check", "Attempt a mock interview or self-test on topics covered so far.", "INTERVIEW", "interview");
     }
   });
   [4, 9].forEach((w) => {
     if (w <= totalWeeks) {
-      milestones.push({
-        week: w,
-        title: "Opportunity: find a relevant event/internship",
-        description: "Browse Unstop/Internshala/LinkedIn and save at least one relevant opportunity.",
-        category: "OPPORTUNITY",
-        relevance: relevanceFor("OPPORTUNITY", "event/internship", role),
-      });
+      push(w, "Opportunity: find a relevant event/internship", "Browse Unstop/Internshala/LinkedIn and save at least one relevant opportunity.", "OPPORTUNITY", "opportunity");
     }
   });
   return milestones.sort((a, b) => a.week - b.week);
+}
+
+/** Year math for slicing a roadmap into academic years. */
+function planSlice(totalWeeks: number, year: string | undefined, degree: string | undefined) {
+  const totalYears = academicYearsForDegree(degree ?? null);
+  const remaining = remainingAcademicYears(year ?? null, degree ?? null);
+  const years = Math.max(1, Math.round(totalWeeks / WEEKS_PER_YEAR));
+  const weeksPerYear = Math.round(totalWeeks / years);
+  const offset = Math.max(0, totalYears - remaining); // 0-based absolute year of the first plan week
+  return { totalYears, remaining, years, weeksPerYear, offset };
+}
+
+function withYear(week: number, academicYear: number) {
+  return { week, academicYear };
 }
 
 export async function persistRoadmap(
@@ -314,33 +286,69 @@ export async function persistRoadmap(
   totalWeeks = 12,
   allowAI = true
 ) {
+  const { totalYears, remaining, years, weeksPerYear, offset } = planSlice(totalWeeks, input.year, input.degree);
+  const role = input.targetRole;
   let milestones: Milestone[] = [];
+
+  // Collect completed work BEFORE doing anything, so the AI can build on it.
+  const existing = await prisma.roadmap.findUnique({ where: { studentId } });
+  let completedWork: CompletedWork | undefined;
+  if (existing) {
+    const oldItems = await prisma.roadmapItem.findMany({
+      where: { roadmapId: existing.id, status: "COMPLETED" },
+      select: { title: true, category: true },
+    });
+    if (oldItems.length > 0) {
+      completedWork = {
+        previousRole: existing.targetRole ?? undefined,
+        items: oldItems,
+      };
+    }
+  }
 
   if (allowAI && process.env.GEMINI_API_KEY) {
     try {
-      if (totalWeeks > 16) {
-        const plan = await generateLongTermPlan(input, totalWeeks);
-        for (const p of plan.phases) {
-          for (let w = Math.max(1, p.weekStart); w <= Math.min(totalWeeks, p.weekEnd); w++) {
+      if (years > 1) {
+        // Year-wise generation: one focused call per academic year so the first,
+        // middle and final years each get the right emphasis.
+        for (let y = 1; y <= years; y++) {
+          const absoluteYear = Math.min(totalYears, offset + y);
+          const plan = await generateYearRoadmap(input, {
+            yearIndex: y,
+            absoluteYear,
+            totalYears,
+            weeksInYear: weeksPerYear,
+            yearFocus: yearFocusContext(absoluteYear, totalYears, role),
+            role,
+            completedWork,
+          });
+          for (const m of plan.milestones.filter((m) => m.week >= 1 && m.week <= weeksPerYear)) {
+            const globalWeek = (y - 1) * weeksPerYear + m.week;
             milestones.push({
-              week: w,
-              title: `Phase ${p.phase}: ${p.title}`,
-              description: p.description,
-              category: p.focus,
-              relevance: relevanceFor(p.focus as MilestoneCategory, p.title, input.targetRole),
+              ...withYear(globalWeek, absoluteYear),
+              title: m.title,
+              description: m.description,
+              category: m.category as MilestoneCategory,
+              relevance: relevanceFor(m.category as MilestoneCategory, m.title, role),
+              resources: m.resources && m.resources.length > 0 ? m.resources : resourcesFor(role, m.category, m.title),
             });
           }
         }
       } else {
-        const ai = await generateRoadmap(input, totalWeeks);
+        const ai = await generateRoadmap(input, totalWeeks, {
+          yearFocus: yearFocusContext(Math.min(totalYears, offset + 1), totalYears, role),
+          completedWork,
+        });
+        const currentYear = totalYears - remaining + 1;
         milestones = ai.milestones
           .filter((m) => m.week >= 1 && m.week <= totalWeeks)
           .map((m) => ({
-            week: m.week,
+            ...withYear(m.week, currentYear),
             title: m.title,
             description: m.description,
             category: m.category as MilestoneCategory,
-            relevance: relevanceFor(m.category as MilestoneCategory, m.title, input.targetRole),
+            relevance: relevanceFor(m.category as MilestoneCategory, m.title, role),
+            resources: m.resources && m.resources.length > 0 ? m.resources : resourcesFor(role, m.category, m.title),
           }));
       }
     } catch (e) {
@@ -349,35 +357,40 @@ export async function persistRoadmap(
   }
 
   if (milestones.length === 0) {
-    const template = templateFor(input.targetRole);
+    const template = templateFor(role);
     if (template) {
-      milestones = buildMilestones(template, totalWeeks, input.targetRole);
-    } else if (getCareerProfile(input.targetRole)) {
-      milestones = buildGenericMilestones(input.targetRole, totalWeeks);
+      milestones = buildMilestones(template, totalWeeks, role);
+    } else if (getCareerProfile(role)) {
+      milestones = buildGenericMilestones(role, totalWeeks);
     } else {
       const generic = templateFor("Software Developer")!;
-      milestones = buildMilestones(generic, totalWeeks, input.targetRole).map((m) => ({
+      milestones = buildMilestones(generic, totalWeeks, role).map((m) => ({
         ...m,
-        title: `[${input.targetRole}] ${m.title}`,
+        title: `[${role}] ${m.title}`,
       }));
     }
+    // Assign year numbers to every fallback milestone too.
+    milestones.forEach((m) => {
+      const y = Math.min(remaining, Math.ceil(m.week / weeksPerYear));
+      m.academicYear = offset + y;
+    });
   }
 
-  const aiSummary = milestones.length > 0
-    ? `${input.targetRole} roadmap: ${totalWeeks} weeks, ${milestones.length} milestones across learning, coding, projects, profiles, interviews and opportunities.`
+  const weeklyCount = milestones.filter((m) => m.week >= 1 && m.week <= totalWeeks).length;
+  const aiSummary = weeklyCount > 0
+    ? `${role} roadmap for ${years} academic year${years > 1 ? "s" : ""} (${totalWeeks} weeks, ≈${years * 12} months) with ${weeklyCount} weekly milestones covering learning, coding, projects, profiles, interviews and opportunities.`
     : null;
 
-  const existing = await prisma.roadmap.findUnique({ where: { studentId } });
   if (existing) {
     await prisma.roadmapItem.deleteMany({ where: { roadmapId: existing.id } });
     // Unlink tasks that referenced the now-deleted roadmap items
     await prisma.task.updateMany({
       where: { studentId, roadmapItemId: { not: null } },
-      data: { roadmapItemId: null },
+      data: { roadmapItemId: null, resources: undefined },
     });
     await prisma.roadmap.update({
       where: { id: existing.id },
-      data: { title: `${input.targetRole} Roadmap`, targetRole: input.targetRole, totalWeeks, aiSummary, status: "ACTIVE" },
+      data: { title: `${role} Roadmap`, targetRole: role, totalWeeks, aiSummary, status: "ACTIVE" },
     });
     for (const m of milestones) {
       await prisma.roadmapItem.create({
@@ -389,17 +402,20 @@ export async function persistRoadmap(
           relevance: m.relevance ?? null,
           category: m.category,
           order: m.week,
+          academicYear: m.academicYear ?? null,
+          resources: m.resources && m.resources.length > 0 ? (m.resources as object) : undefined,
         },
       });
     }
-    return existing;
+    const fresh = await prisma.roadmap.findUnique({ where: { studentId } });
+    return fresh ?? existing;
   }
 
   const roadmap = await prisma.roadmap.create({
     data: {
       studentId,
-      title: `${input.targetRole} Roadmap`,
-      targetRole: input.targetRole,
+      title: `${role} Roadmap`,
+      targetRole: role,
       totalWeeks,
       aiSummary,
     },
@@ -414,6 +430,8 @@ export async function persistRoadmap(
         relevance: m.relevance ?? null,
         category: m.category,
         order: m.week,
+        academicYear: m.academicYear ?? null,
+        resources: m.resources && m.resources.length > 0 ? (m.resources as object) : undefined,
       },
     });
   }

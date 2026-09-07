@@ -32,7 +32,7 @@ export default async function NotificationsPage() {
     <div className="mx-auto max-w-3xl space-y-6 animate-fade-in-up">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Notifications</h1>
+          <h1 className="font-serif text-3xl font-medium tracking-tight">Notifications</h1>
           <p className="text-sm text-slate-500">
             {unreadCount > 0 ? `${unreadCount} unread` : "You're all caught up"}
           </p>
@@ -62,7 +62,7 @@ export default async function NotificationsPage() {
             return (
               <div
                 key={n.id}
-                className={`rounded-lg border p-4 transition-colors ${n.read ? "border-slate-100 bg-white" : "border-indigo-200 bg-indigo-50/50"}`}
+                className={`rounded-lg border p-4 transition-colors ${n.read ? "border-slate-100 bg-surface" : "border-indigo-200 bg-indigo-50/50"}`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">

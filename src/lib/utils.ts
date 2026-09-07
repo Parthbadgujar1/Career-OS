@@ -5,6 +5,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Open-redirect guard for post-login redirect targets. Only same-origin,
+ * single-slash relative paths are accepted (no scheme, no protocol-relative
+ * URLs, no leading backslashes, no whitespace/control characters).
+ */
+export function safeCallbackUrl(value: string | null | undefined, fallback = "/app"): string {
+  if (!value) return fallback;
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//") || trimmed.startsWith("\\")) {
+    return fallback;
+  }
+  if (/[\u0000-\u0020\u007f]/.test(trimmed)) {
+    return fallback;
+  }
+  return trimmed;
+}
+
 export function formatDate(d: Date | string | null | undefined): string {
   if (!d) return "—";
   const date = typeof d === "string" ? new Date(d) : d;

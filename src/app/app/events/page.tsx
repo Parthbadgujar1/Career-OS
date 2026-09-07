@@ -63,7 +63,7 @@ export default async function EventsPage() {
     <div className="mx-auto max-w-5xl space-y-6 animate-fade-in-up">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Events & Webinars</h1>
+          <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900">Events & Webinars</h1>
           <p className="text-sm text-slate-500">Discover and register for career-boosting events</p>
         </div>
         <Link href="/app/opportunities">

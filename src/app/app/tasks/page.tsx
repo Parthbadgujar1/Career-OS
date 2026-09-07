@@ -1,13 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
 import { bumpStreak, ensureWeeklyTasks } from "@/lib/engine/tasks";
-import { completeTaskAction, skipTaskAction, ensureTasksAction } from "@/server/actions/tasks";
+import { completeTaskAction, skipTaskAction, restoreTaskAction, ensureTasksAction } from "@/server/actions/tasks";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge, Progress } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate, weekLabel } from "@/lib/utils";
-import { RefreshCw, CheckCircle2, ListTodo, CalendarRange } from "lucide-react";
+import { ResourceLinks, type ResourceLinkData } from "@/components/app/resource-links";
+import { RefreshCw, CheckCircle2, ListTodo, CalendarRange, ChevronDown, SkipForward, RotateCcw } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -16,19 +17,24 @@ export default async function TasksPage() {
   const tasks = await ensureWeeklyTasks(prisma, profile.id);
   const streak = await bumpStreak(prisma, profile.id);
 
-  const total = tasks.length;
-  const completed = tasks.filter((t) => t.status === "COMPLETED").length;
-  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-
   const pending = tasks.filter((t) => t.status === "PENDING");
   const done = tasks.filter((t) => t.status === "COMPLETED");
   const skipped = tasks.filter((t) => t.status === "SKIPPED");
+
+  const total = pending.length + done.length;
+  const pct = total > 0 ? Math.round((done.length / total) * 100) : 0;
+
+  const allSkipped = await prisma.task.findMany({
+    where: { studentId: profile.id, status: "SKIPPED" },
+    orderBy: { completedAt: "desc" },
+    take: 20,
+  });
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3 animate-fade-in-up">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+          <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900 flex items-center gap-2">
             <ListTodo className="h-6 w-6 text-indigo-500" />
             Weekly Plan
           </h1>
@@ -49,7 +55,7 @@ export default async function TasksPage() {
       </div>
 
       <Card className="animate-fade-in-up delay-100 overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 to-cyan-500" />
+        <div className="absolute inset-x-0 top-0 h-1 bg-indigo-400" />
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
@@ -57,7 +63,7 @@ export default async function TasksPage() {
               Weekly progress
             </CardTitle>
             <span className="text-sm font-bold text-indigo-600">
-              {completed}/{total}
+              {done.length}/{total}
             </span>
           </div>
           <Progress value={pct} />
@@ -67,7 +73,7 @@ export default async function TasksPage() {
             </p>
           ) : (
             <p className="text-sm text-slate-500">
-              Mark each task done to tick it off in the roadmap. Skipping also advances the week.
+              Mark each task done to tick it off in the roadmap. Skipping advances the week but the task stays visible below.
             </p>
           )}
         </CardHeader>
@@ -89,7 +95,7 @@ export default async function TasksPage() {
         {pending.map((t, i) => (
           <div
             key={t.id}
-            className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-indigo-200 hover:shadow-md hover:bg-indigo-50/20 animate-fade-in-up"
+            className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-surface p-4 shadow-sm transition-all duration-200 hover:border-indigo-200 hover:shadow-md hover:bg-indigo-50/20 animate-fade-in-up"
             style={{ animationDelay: `${150 + i * 60}ms` }}
           >
             <div className="min-w-0">
@@ -113,13 +119,14 @@ export default async function TasksPage() {
               </div>
               <p className="mt-2 font-semibold text-slate-900">{t.title}</p>
               {t.description && <p className="mt-0.5 text-sm text-slate-500 leading-relaxed">{t.description}</p>}
+              <ResourceLinks resources={(Array.isArray(t.resources) ? t.resources : []) as unknown as ResourceLinkData[]} />
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <form action={skipTaskAction.bind(null, t.id)}>
                 <Button type="submit" variant="ghost" size="sm" className="text-slate-400 hover:text-slate-600">Skip</Button>
               </form>
               <form action={completeTaskAction.bind(null, t.id)}>
-                <Button type="submit" size="sm" variant="gradient">Done</Button>
+                <Button type="submit" size="sm">Done</Button>
               </form>
             </div>
           </div>
@@ -127,16 +134,18 @@ export default async function TasksPage() {
       </div>
 
       {done.length > 0 && (
-        <div className="animate-fade-in-up delay-300">
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+        <details className="animate-fade-in-up delay-300 group" open>
+          <summary className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-surface px-4 py-3 text-sm font-bold uppercase tracking-wider text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-500 select-none">
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
             Completed this week
-          </h2>
-          <div className="space-y-2">
+            <Badge variant="secondary" className="ml-auto text-[10px]">{done.length}</Badge>
+            <ChevronDown className="h-3.5 w-3.5 text-slate-300 transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-2 space-y-2">
             {done.map((t, i) => (
               <div
                 key={t.id}
-                className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white/60 px-4 py-3 animate-fade-in-up"
+                className="flex items-center gap-3 rounded-xl border border-slate-100 bg-surface/60 px-4 py-3 animate-fade-in-up"
                 style={{ animationDelay: `${i * 40}ms` }}
               >
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-[10px] font-bold">
@@ -146,26 +155,43 @@ export default async function TasksPage() {
               </div>
             ))}
           </div>
-        </div>
+        </details>
       )}
 
-      {skipped.length > 0 && (
-        <div className="animate-fade-in-up delay-350">
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-            Skipped
-          </h2>
-          <div className="space-y-2">
-            {skipped.map((t, i) => (
+      {allSkipped.length > 0 && (
+        <details className="animate-fade-in-up delay-350 group">
+          <summary className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-surface px-4 py-3 text-sm font-bold uppercase tracking-wider text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-500 select-none">
+            <SkipForward className="h-3.5 w-3.5 text-amber-500" />
+            Skipped tasks
+            <Badge variant="secondary" className="ml-auto text-[10px]">{allSkipped.length}</Badge>
+            <ChevronDown className="h-3.5 w-3.5 text-slate-300 transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-2 space-y-2">
+            {allSkipped.map((t, i) => (
               <div
                 key={t.id}
-                className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white/60 px-4 py-3 animate-fade-in-up"
+                className="flex items-center gap-3 rounded-xl border border-slate-100 bg-surface/60 px-4 py-3 animate-fade-in-up"
                 style={{ animationDelay: `${i * 40}ms` }}
               >
-                <p className="text-sm text-slate-400 line-through">{t.title}</p>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-amber-600 text-[10px] font-bold">
+                  <SkipForward className="h-2.5 w-2.5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-slate-400 line-through">{t.title}</p>
+                  {t.completedAt && (
+                    <p className="text-[10px] text-slate-300">{formatDate(t.completedAt)}</p>
+                  )}
+                </div>
+                <form action={restoreTaskAction.bind(null, t.id)}>
+                  <Button type="submit" variant="ghost" size="sm" className="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50">
+                    <RotateCcw className="h-3 w-3 mr-1" />
+                    Do it
+                  </Button>
+                </form>
               </div>
             ))}
           </div>
-        </div>
+        </details>
       )}
     </div>
   );

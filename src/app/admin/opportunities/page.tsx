@@ -40,7 +40,7 @@ export default async function AdminOpportunitiesPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold">Opportunity Management</h1>
+        <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900">Opportunity Management</h1>
         <p className="text-sm text-slate-500">Catalog, engagement, and availability across all platforms</p>
       </div>
 
@@ -145,7 +145,7 @@ export default async function AdminOpportunitiesPage() {
                 <Label htmlFor="description">Description</Label>
                 <Textarea id="description" name="description" rows={3} placeholder="What should students know?" />
               </div>
-              <Button type="submit" variant="gradient" className="w-full">
+              <Button type="submit" variant="default" className="w-full">
                 Publish Opportunity
               </Button>
             </form>

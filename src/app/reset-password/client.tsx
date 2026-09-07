@@ -20,7 +20,7 @@ export default function ResetPasswordClient({ searchParams }: { searchParams: Pr
         <CardHeader><CardTitle>Invalid link</CardTitle></CardHeader>
         <CardContent>
           <p className="text-sm text-slate-600">This password reset link is invalid.</p>
-          <Button asChild variant="gradient" className="mt-4 w-full"><Link href="/forgot-password">Request a new link</Link></Button>
+          <Button asChild className="mt-4 w-full"><Link href="/forgot-password">Request a new link</Link></Button>
         </CardContent>
       </Card>
     );
@@ -37,7 +37,7 @@ export default function ResetPasswordClient({ searchParams }: { searchParams: Pr
           <div className="space-y-3 text-center">
             <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500" />
             <p className="text-sm text-slate-600">Your password has been reset.</p>
-            <Button asChild variant="gradient" className="w-full"><Link href="/login">Log in</Link></Button>
+            <Button asChild className="w-full"><Link href="/login">Log in</Link></Button>
           </div>
         ) : (
           <form action={formAction} className="space-y-4">
@@ -47,7 +47,7 @@ export default function ResetPasswordClient({ searchParams }: { searchParams: Pr
               <Label htmlFor="password">New password</Label>
               <Input id="password" name="password" type="password" required minLength={6} />
             </div>
-            <Button type="submit" className="w-full" variant="gradient" disabled={pending}>
+            <Button type="submit" className="w-full" disabled={pending}>
               {pending ? "Resetting..." : "Reset password"}
             </Button>
           </form>

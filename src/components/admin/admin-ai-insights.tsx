@@ -30,12 +30,12 @@ export async function AdminAiInsights({ metrics }: { metrics: AdminAnalyticsData
   }
 
   return (
-    <Card className="overflow-hidden border-purple-100 bg-gradient-to-br from-purple-50/40 via-indigo-50/10 to-slate-50 shadow-sm animate-fade-in-up">
-      <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-purple-500 via-indigo-500 to-cyan-500" />
+    <Card className="overflow-hidden border-indigo-100 bg-indigo-50 shadow-sm animate-fade-in-up">
+      <div className="absolute inset-x-0 top-0 h-1.5 bg-amber-400" />
       <CardHeader className="pb-3 pt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <div className="rounded-full bg-purple-100 p-1.5 text-purple-600">
+            <div className="rounded-full bg-amber-50 p-1.5 text-amber-600">
               <Sparkles className="h-5 w-5 animate-pulse" />
             </div>
             <div>
@@ -47,14 +47,14 @@ export async function AdminAiInsights({ metrics }: { metrics: AdminAnalyticsData
               </CardDescription>
             </div>
           </div>
-          <Badge variant="gradient" className="from-purple-600 to-indigo-600">AI Consultant Active</Badge>
+          <Badge className="bg-violet-600 text-white border-violet-600">AI Consultant Active</Badge>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-6">
         {/* Platform Health Overview */}
-        <div className="rounded-xl border border-purple-100 bg-white/70 backdrop-blur-sm p-4 shadow-sm">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-purple-600 flex items-center gap-1.5 mb-1.5">
+        <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-4 shadow-sm">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-amber-700 flex items-center gap-1.5 mb-1.5">
             <Activity className="h-3.5 w-3.5" />
             Platform Health Assessment
           </h3>
@@ -74,14 +74,14 @@ export async function AdminAiInsights({ metrics }: { metrics: AdminAnalyticsData
             <div className="space-y-3">
               {insights.bottlenecks.length === 0 ? (
                 <div className="rounded-xl border border-emerald-100 bg-emerald-50/20 p-4 text-center">
-                  <p className="text-sm font-semibold text-emerald-800">No major bottlenecks detected in the pipeline! 🎉</p>
+                  <p className="text-sm font-semibold text-emerald-800">No major bottlenecks detected in the pipeline!</p>
                 </div>
               ) : (
                 insights.bottlenecks.map((b, i) => (
                   <Link
                     key={i}
                     href="/admin#students"
-                    className="block rounded-xl border border-amber-100 bg-white/55 p-3.5 space-y-2 hover:shadow-md hover:border-amber-200 transition-all group"
+                    className="block rounded-xl border border-amber-100 bg-surface p-3.5 space-y-2 hover:shadow-md hover:border-amber-200 transition-all group"
                   >
                     <span className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
                       {b.area}
@@ -90,8 +90,8 @@ export async function AdminAiInsights({ metrics }: { metrics: AdminAnalyticsData
                     <p className="text-xs text-slate-600 leading-relaxed">
                       <span className="font-semibold text-slate-700">Impact:</span> {b.impact}
                     </p>
-                    <p className="text-xs text-purple-800 bg-purple-50/40 border border-purple-100/50 rounded-lg px-2.5 py-1.5 leading-relaxed font-medium">
-                      <span className="font-bold text-purple-900">Suggested Action:</span> {b.resolution}
+                    <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-1.5 leading-relaxed font-medium">
+                      <span className="font-bold text-amber-900">Suggested Action:</span> {b.resolution}
                     </p>
                   </Link>
                 ))
@@ -101,14 +101,14 @@ export async function AdminAiInsights({ metrics }: { metrics: AdminAnalyticsData
 
           {/* Strategic Recommendations */}
           <div className="space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-purple-600 flex items-center gap-1.5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
               <Lightbulb className="h-3.5 w-3.5" />
               Strategic Recommendations
             </h3>
             <div className="space-y-2.5">
               {insights.recommendations.map((rec, i) => (
-                <div key={i} className="flex items-start gap-2.5 rounded-lg border border-purple-100/60 bg-white/40 p-3 text-xs leading-relaxed text-slate-700 font-medium">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-purple-100 text-purple-600 font-bold text-[10px]">
+                <div key={i} className="flex items-start gap-2.5 rounded-lg border border-amber-100/60 bg-surface p-3 text-xs leading-relaxed text-slate-700 font-medium">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 font-bold text-[10px]">
                     {i + 1}
                   </span>
                   <span>{rec}</span>

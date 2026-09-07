@@ -73,7 +73,7 @@ export function InterviewBooker({ slots, bookedIds }: { slots: SlotCard[]; booke
               <div className="mt-2 text-xs font-semibold text-emerald-600">✓ Booked — find it under My Sessions</div>
             ) : (
               <div className="mt-2 flex justify-end">
-                <Button size="sm" variant="gradient" onClick={() => book(s.id)} disabled={pendingId === s.id}>
+                <Button size="sm" variant="default" onClick={() => book(s.id)} disabled={pendingId === s.id}>
                   {pendingId === s.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
                   Book slot
                 </Button>

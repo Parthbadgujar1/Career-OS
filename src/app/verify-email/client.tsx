@@ -34,13 +34,13 @@ export default function VerifyEmailClient({ searchParams }: { searchParams: Prom
         {status === "ok" && (
           <div className="space-y-3">
             <p className="text-sm text-slate-600">Your email is confirmed. You now have full access to all features.</p>
-            <Button asChild variant="gradient" className="w-full"><Link href="/app">Open Dashboard</Link></Button>
+            <Button asChild className="w-full"><Link href="/app">Open Dashboard</Link></Button>
           </div>
         )}
         {status === "err" && (
           <div className="space-y-3">
             <p className="text-sm text-slate-600">This verification link is invalid or has expired. Check your inbox for a fresh link.</p>
-            <Button asChild variant="gradient" className="w-full"><Link href="/login">Back to Login</Link></Button>
+            <Button asChild className="w-full"><Link href="/login">Back to Login</Link></Button>
           </div>
         )}
       </CardContent>

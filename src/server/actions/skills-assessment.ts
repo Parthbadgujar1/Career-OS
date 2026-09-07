@@ -18,6 +18,7 @@ import { fromJson } from "@/lib/utils";
 export async function restartAssessmentAction() {
   const { profile } = await requireStudentProfile();
 
+  await prisma.assessmentQuestion.deleteMany({ where: { studentId: profile.id } });
   await prisma.studentSkill.deleteMany({ where: { studentId: profile.id } });
   await prisma.studentProfile.update({
     where: { id: profile.id },
@@ -38,6 +39,9 @@ export async function startAssessmentAction(): Promise<
     return { error: "Complete onboarding first — choose your degree and target role." };
   }
 
+  // A fresh run replaces any previous (possibly partial) store.
+  await prisma.assessmentQuestion.deleteMany({ where: { studentId: profile.id } });
+
   const questions = await generateInitialQuestions({
     degree: profile.degree,
     specialization: profile.specialization ?? "",
@@ -45,7 +49,31 @@ export async function startAssessmentAction(): Promise<
     year: profile.year ?? "",
   });
 
-  return { ok: true, questions };
+  await prisma.assessmentQuestion.createMany({
+    data: questions.map((q) => ({
+      studentId: profile.id,
+      round: 0,
+      questionId: q.id,
+      question: q.question,
+      options: JSON.stringify(q.options),
+      correctIndex: q.correctIndex,
+      topic: q.topic,
+      skillArea: q.skillArea,
+      difficulty: q.difficulty,
+    })),
+  });
+
+  return {
+    ok: true,
+    questions: questions.map((q) => ({
+      id: q.id,
+      question: q.question,
+      options: q.options,
+      topic: q.topic,
+      skillArea: q.skillArea,
+      difficulty: q.difficulty,
+    })),
+  };
 }
 
 export async function submitRoundAction(
@@ -56,13 +84,28 @@ export async function submitRoundAction(
 > {
   const { profile } = await requireStudentProfile();
 
-  const allAnswers = answers.map((a) => ({
+  // Grade honestly: look up the stored correct answer for each question.
+  const stored = await prisma.assessmentQuestion.findMany({
+    where: { studentId: profile.id, round },
+  });
+  const correctByQuestion = new Map(stored.map((q) => [q.questionId, q.correctIndex]));
+
+  const gradedAnswers = answers.map((a) => ({
     ...a,
-    correct: a.answered === 0, // placeholder — will be graded in final step
+    correct: correctByQuestion.get(a.questionId) === a.answered,
   }));
 
+  // Write the student's selections back to the store so the final grade can
+  // use every round's answers, not just the latest one.
+  for (const a of answers) {
+    await prisma.assessmentQuestion.updateMany({
+      where: { studentId: profile.id, questionId: a.questionId },
+      data: { selected: a.answered, correct: correctByQuestion.get(a.questionId) === a.answered },
+    });
+  }
+
   if (round === 0) {
-    // Generate follow-up questions based on first round
+    // Generate follow-up questions based on how round 1 was actually answered.
     const followUp = await generateFollowUpQuestions(
       {
         degree: profile.degree ?? "",
@@ -70,12 +113,55 @@ export async function submitRoundAction(
         targetRole: profile.targetRole ?? "",
         year: profile.year ?? "",
       },
-      allAnswers,
+      gradedAnswers,
     );
-    return { ok: true, nextQuestions: followUp };
+
+    await prisma.assessmentQuestion.createMany({
+      data: followUp.map((q) => ({
+        studentId: profile.id,
+        round: 1,
+        questionId: q.id,
+        question: q.question,
+        options: JSON.stringify(q.options),
+        correctIndex: q.correctIndex,
+        topic: q.topic,
+        skillArea: q.skillArea,
+        difficulty: q.difficulty,
+      })),
+    });
+
+    return {
+      ok: true,
+      nextQuestions: followUp.map((q) => ({
+        id: q.id,
+        question: q.question,
+        options: q.options,
+        topic: q.topic,
+        skillArea: q.skillArea,
+        difficulty: q.difficulty,
+      })),
+    };
   }
 
-  // Final round — grade everything
+  // Final round — grade with every answered question across both rounds.
+  const allStored = await prisma.assessmentQuestion.findMany({
+    where: { studentId: profile.id, selected: { not: null } },
+    orderBy: [{ round: "asc" }, { createdAt: "asc" }],
+  });
+  if (allStored.length === 0) {
+    return { error: "No valid answers to grade — please restart the assessment." };
+  }
+
+  const allAnswers = allStored.map((q) => ({
+    questionId: q.questionId,
+    question: q.question,
+    answered: q.selected as number,
+    correct: (q.correct as boolean) ?? false,
+    topic: q.topic,
+    skillArea: q.skillArea,
+    difficulty: q.difficulty,
+  }));
+
   const result = await gradeSkillsFromResponses(
     {
       degree: profile.degree ?? "",

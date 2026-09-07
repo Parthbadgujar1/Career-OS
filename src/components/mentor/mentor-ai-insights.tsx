@@ -31,8 +31,8 @@ export async function MentorAiInsights({ students }: { students: CohortStudentDa
   }
 
   return (
-    <Card className="overflow-hidden border-indigo-100 bg-gradient-to-br from-indigo-50/40 via-purple-50/20 to-slate-50 shadow-sm animate-fade-in-up">
-      <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+    <Card className="overflow-hidden border-indigo-100 bg-indigo-50 shadow-sm animate-fade-in-up">
+      <div className="absolute inset-x-0 top-0 h-1.5 bg-amber-400" />
       <CardHeader className="pb-3 pt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -48,13 +48,13 @@ export async function MentorAiInsights({ students }: { students: CohortStudentDa
               </CardDescription>
             </div>
           </div>
-          <Badge variant="gradient">Powered by Gemini</Badge>
+          <Badge className="bg-violet-600 text-white border-violet-600">Powered by Gemini</Badge>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-6">
         {/* Executive Summary */}
-        <div className="rounded-xl border border-indigo-100 bg-white/70 backdrop-blur-sm p-4 shadow-sm">
+        <div className="rounded-xl border border-indigo-100 bg-surface/70 backdrop-blur-sm p-4 shadow-sm">
           <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 flex items-center gap-1.5 mb-1.5">
             <Users className="h-3.5 w-3.5" />
             Cohort Executive Summary
@@ -82,7 +82,7 @@ export async function MentorAiInsights({ students }: { students: CohortStudentDa
                   <Link
                     key={i}
                     href="/mentor#mentees"
-                    className="block rounded-xl border border-rose-100 bg-white/55 p-3.5 space-y-2 hover:shadow-md hover:border-rose-200 transition-all group"
+                    className="block rounded-xl border border-rose-100 bg-surface/55 p-3.5 space-y-2 hover:shadow-md hover:border-rose-200 transition-all group"
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
@@ -119,7 +119,7 @@ export async function MentorAiInsights({ students }: { students: CohortStudentDa
                   <Link
                     key={i}
                     href="/mentor/skills"
-                    className="block rounded-xl border border-indigo-100/60 bg-white/55 p-3.5 space-y-2 hover:shadow-md hover:border-indigo-200 transition-all group"
+                    className="block rounded-xl border border-indigo-100/60 bg-surface/55 p-3.5 space-y-2 hover:shadow-md hover:border-indigo-200 transition-all group"
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-800 text-sm flex items-center gap-1.5">

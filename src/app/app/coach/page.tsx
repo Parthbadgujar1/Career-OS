@@ -44,7 +44,7 @@ What would you like to work on?`;
   return (
     <div className="mx-auto max-w-3xl space-y-6 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold">AI Career Coach</h1>
+        <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900">AI Career Coach</h1>
         <p className="text-sm text-slate-500">Answers come from your live roadmap, skills, and progress</p>
       </div>
       <CoachChat welcome={welcome} />

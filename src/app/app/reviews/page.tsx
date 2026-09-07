@@ -26,7 +26,7 @@ export default async function ReviewsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Resume & Professional Profiles</h1>
+        <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900">Resume & Professional Profiles</h1>
         <p className="text-sm text-slate-500">
           ATS-oriented resume review and LinkedIn/GitHub positioning checks.
         </p>

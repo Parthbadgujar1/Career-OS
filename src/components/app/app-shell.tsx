@@ -29,8 +29,10 @@ import {
   Timer,
   FileCheck,
   Lightbulb,
+  Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/app/theme-toggle";
 
 const NAV_GROUPS = [
   {
@@ -62,6 +64,7 @@ const NAV_GROUPS = [
     group: "OPPORTUNITIES",
     items: [
       { href: "/app/opportunities", label: "Discover", icon: Lightbulb },
+      { href: "/app/jobs", label: "Job Board", icon: Briefcase },
       { href: "/app/events", label: "Events", icon: Calendar },
       { href: "/app/jd-match", label: "JD Match", icon: FileCheck },
     ],
@@ -128,16 +131,16 @@ export function AppShell({
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-200/80 bg-white/95 backdrop-blur-xl transition-transform duration-300 ease-out md:translate-x-0 md:z-20",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-200/80 bg-surface/95 backdrop-blur-xl transition-transform duration-300 ease-out md:translate-x-0 md:z-20",
           mobileOpen ? "translate-x-0 animate-slide-in-left" : "-translate-x-full"
         )}
       >
         <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-100">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-sm font-bold text-white shadow-lg shadow-indigo-500/25">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold font-serif text-white shadow-sm shadow-indigo-900/15">
             CO
           </div>
           <div>
-            <p className="text-sm font-bold leading-none text-slate-900 font-display">Career OS</p>
+            <p className="font-serif text-[17px] font-semibold leading-none tracking-tight text-slate-900">Career OS</p>
             <p className="text-[11px] text-slate-400 mt-0.5">Student Dashboard</p>
           </div>
           <button
@@ -178,10 +181,10 @@ export function AppShell({
                         href={item.href}
                         onClick={() => setMobileOpen(false)}
                         className={cn(
-                          "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 active:scale-[0.98]",
+                          "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 active:scale-[0.98]",
                           active
-                            ? "bg-gradient-to-r from-indigo-50 via-violet-50 to-transparent text-indigo-700 shadow-sm ring-1 ring-inset ring-indigo-200"
-                            : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                            ? "bg-indigo-50 text-indigo-800 ring-1 ring-inset ring-indigo-100"
+                            : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
                         )}
                         style={{ animationDelay: `${ii * 30}ms` }}
                       >
@@ -215,10 +218,10 @@ export function AppShell({
                 href={action.href}
                 onClick={() => setMobileOpen(false)}
                 className={cn(
-                  "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                  "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
                   action.primary
-                    ? "btn-shine bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97]"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98]"
+                    ? "btn-shine bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-900/10 active:translate-y-0 active:scale-[0.97]"
+                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98]"
                 )}
                 style={{ animationDelay: `${(NAV_GROUPS.length + i) * 50}ms` }}
               >
@@ -248,7 +251,7 @@ export function AppShell({
       </aside>
 
       <div className="flex min-h-screen flex-1 flex-col md:pl-64">
-        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200/60 bg-white/80 px-4 py-3 backdrop-blur-xl sm:px-6 animate-fade-in-down">
+        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200/60 bg-surface/80 px-4 py-3 backdrop-blur-xl sm:px-6 animate-fade-in-down">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileOpen(true)}
@@ -259,7 +262,7 @@ export function AppShell({
               <Menu className="h-5 w-5" />
             </button>
             <Link href="/app" className="md:hidden">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-xs font-bold text-white shadow-md shadow-indigo-500/20">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-xs font-semibold font-serif text-white shadow-sm">
                 CO
               </span>
             </Link>
@@ -271,12 +274,13 @@ export function AppShell({
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="hidden items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-50 to-violet-50 px-3 py-1.5 text-xs font-bold text-cyan-700 ring-1 ring-inset ring-violet-200 sm:flex">
-              <Sparkles className="h-3 w-3 text-violet-500" />
-              AI-Powered
+            <ThemeToggle />
+            <div className="hidden items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-100 sm:flex">
+              <Sparkles className="h-3 w-3 text-indigo-500" />
+              Guided by AI
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-xs font-bold text-white shadow-sm">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white shadow-sm">
                 {(user.name || "U")[0].toUpperCase()}
               </div>
               <span className="hidden text-xs font-medium text-slate-600 sm:inline">{user.email}</span>

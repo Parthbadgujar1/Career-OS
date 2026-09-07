@@ -102,26 +102,26 @@ export function AdminStudentsTable({
         </Select>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-xl border border-slate-200/80">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b text-left text-xs uppercase tracking-wide text-slate-400">
-              <th className="pb-2 pr-4">Student</th>
-              <th className="pb-2 pr-4">Mobile</th>
-              <th className="pb-2 pr-4">College</th>
-              <th className="pb-2 pr-4">City</th>
-              <th className="pb-2 pr-4">Target Role</th>
-              <th className="pb-2 pr-4">Readiness</th>
-              <th className="pb-2 pr-4">Mentor</th>
-              <th className="pb-2 pr-4">Status</th>
-              <th className="pb-2 pr-4">Joined</th>
-              <th className="pb-2">Assign Mentor</th>
+            <tr className="border-b border-slate-200 bg-slate-50/70 text-left text-xs uppercase tracking-wide text-slate-500">
+              <th scope="col" className="py-3 pr-4 pl-4 font-semibold">Student</th>
+              <th scope="col" className="py-3 pr-4 font-semibold">Mobile</th>
+              <th scope="col" className="py-3 pr-4 font-semibold">College</th>
+              <th scope="col" className="py-3 pr-4 font-semibold">City</th>
+              <th scope="col" className="py-3 pr-4 font-semibold">Target Role</th>
+              <th scope="col" className="py-3 pr-4 font-semibold">Readiness</th>
+              <th scope="col" className="py-3 pr-4 font-semibold">Mentor</th>
+              <th scope="col" className="py-3 pr-4 font-semibold">Status</th>
+              <th scope="col" className="py-3 pr-4 font-semibold">Joined</th>
+              <th scope="col" className="py-3 pr-4 font-semibold">Assign Mentor</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((s) => (
               <tr key={s.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors">
-                <td className="py-2 pr-4">
+                <td className="py-2 pr-4 pl-4">
                   <p className="font-medium">{s.name}</p>
                   <p className="text-xs text-slate-400">{s.email}</p>
                 </td>

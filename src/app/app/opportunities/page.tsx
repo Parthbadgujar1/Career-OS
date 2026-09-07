@@ -14,7 +14,7 @@ export default async function OpportunitiesPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold">Discover Opportunities</h1>
+        <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900">Discover Opportunities</h1>
         <p className="text-sm text-slate-500">
           AI-curated platforms and opportunities matched to your skills, goals, and career path.
         </p>

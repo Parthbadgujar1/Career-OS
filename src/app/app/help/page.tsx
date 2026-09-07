@@ -58,7 +58,7 @@ export default function HelpPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 animate-fade-in-up">
       <div className="text-center">
-        <h1 className="text-3xl font-bold">Help Center</h1>
+        <h1 className="font-serif text-4xl font-medium tracking-tight">Help Center</h1>
         <p className="mt-2 text-slate-500">Find answers to common questions about Career OS</p>
       </div>
 
@@ -84,7 +84,7 @@ export default function HelpPage() {
               key={faq.q}
               className={cn(
                 "overflow-hidden transition-all duration-200",
-                open && "border-indigo-300 shadow-md shadow-indigo-100"
+                open && "border-indigo-300 shadow-sm shadow-indigo-900/10"
               )}
             >
               <button
@@ -114,7 +114,7 @@ export default function HelpPage() {
         )}
       </div>
 
-      <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-100">
+      <Card className="bg-indigo-50 border-indigo-100">
         <CardHeader>
           <CardTitle>Still need help?</CardTitle>
           <CardDescription>Can&apos;t find what you&apos;re looking for?</CardDescription>

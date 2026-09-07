@@ -9,10 +9,10 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-100">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-lg font-bold tracking-tight">
+          <Link href="/" className="font-serif text-lg font-semibold tracking-tight">
             Career <span className="text-violet-600">OS</span>
           </Link>
           <Link href="/" className="text-sm text-slate-500 hover:text-slate-900">
@@ -22,7 +22,7 @@ export default function TermsPage() {
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-12 space-y-8">
-        <h1 className="text-3xl font-extrabold text-slate-900">Terms of Service</h1>
+        <h1 className="font-serif text-3xl font-semibold text-slate-900 sm:text-4xl">Terms of Service</h1>
         <p className="text-sm text-slate-500">Last updated: August 2026</p>
 
         <section className="space-y-4 text-slate-700 leading-relaxed">

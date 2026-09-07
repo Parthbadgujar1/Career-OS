@@ -67,7 +67,7 @@ export function CoachChat({ welcome }: { welcome: string }) {
       <Card className="flex flex-col h-[50vh] sm:h-[600px] animate-slide-in-up">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-sm font-bold text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-600 shadow-sm shadow-indigo-900/10 text-sm font-bold text-white">
               <Sparkles className="h-4 w-4" />
             </div>
             <CardTitle className="text-lg">Career Coach</CardTitle>
@@ -82,7 +82,7 @@ export function CoachChat({ welcome }: { welcome: string }) {
                   <div
                     className={cn(
                       "flex h-8 w-8 items-center justify-center rounded-full shrink-0",
-                      msg.role === "user" ? "bg-indigo-600 text-white" : "bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600"
+                      msg.role === "user" ? "bg-indigo-600 text-white" : "bg-indigo-100 text-indigo-600"
                     )}
                   >
                     {msg.role === "user" ? <span className="text-xs font-bold">U</span> : <Bot className="h-4 w-4" />}
@@ -101,7 +101,7 @@ export function CoachChat({ welcome }: { welcome: string }) {
               ))}
               {isPending && (
                 <div className="flex gap-3 animate-pulse">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
                     <Bot className="h-4 w-4" />
                   </div>
                   <div className="flex items-center gap-2 bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100">
@@ -120,7 +120,7 @@ export function CoachChat({ welcome }: { welcome: string }) {
                 setShowScrollButton(false);
                 scrollToBottom("smooth");
               }}
-              className="absolute bottom-4 right-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-lg shadow-slate-900/10 hover:text-indigo-600 hover:border-indigo-300 transition-all animate-scale-in"
+              className="absolute bottom-4 right-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-surface text-slate-500 shadow-lg shadow-slate-900/10 hover:text-indigo-600 hover:border-indigo-300 transition-all animate-scale-in"
               aria-label="Scroll to latest message"
             >
               <ArrowDown className="h-4 w-4" />

@@ -19,8 +19,10 @@ export default async function AssessmentPage({
 
   const { step } = await searchParams;
 
+  const hasExistingPath = profile.degree !== null || profile.targetRole !== null;
+
   if (!profile.onboardedAt || step === "onboard") {
-    const showBack = step === "onboard" && (profile.degree !== null || profile.targetRole !== null);
+    const showBack = hasExistingPath;
     return (
       <div className="mx-auto max-w-3xl">
         {showBack && (
@@ -50,8 +52,8 @@ export default async function AssessmentPage({
   if (!profile.assessmentComplete) {
     return (
       <div className="mx-auto max-w-3xl space-y-6">
-        <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50 p-5">
-          <h1 className="text-2xl font-bold">AI Skill Assessment</h1>
+        <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-5">
+          <h1 className="font-serif text-3xl font-medium tracking-tight">AI Skill Assessment</h1>
           <p className="mt-1 text-sm text-slate-600">
             No self-rating here — the AI asks adaptive questions based on your chosen
             specialization and target role, then grades every skill (1-5) from your answers.

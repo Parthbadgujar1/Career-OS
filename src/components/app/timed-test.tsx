@@ -161,7 +161,7 @@ export function TimedTest() {
                     "rounded-xl border p-4 text-left transition-all",
                     difficulty === d
                       ? "border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600"
-                      : "border-slate-200 bg-white hover:border-slate-300"
+                      : "border-slate-200 bg-surface hover:border-slate-300"
                   )}
                 >
                   <p className="font-semibold">{DIFFICULTY_META[d].label}</p>
@@ -170,7 +170,7 @@ export function TimedTest() {
               ))}
             </div>
           </div>
-          <Button variant="gradient" onClick={() => setStarted(true)}>
+          <Button onClick={() => setStarted(true)}>
             Start test — {PROGRESS_TEST_MINUTES} min timer
           </Button>
         </CardContent>
@@ -209,7 +209,7 @@ export function TimedTest() {
                 "flex w-full items-start gap-3 rounded-xl border p-3 text-left text-sm transition-all",
                 answers[q.id] === idx
                   ? "border-indigo-600 bg-indigo-50 text-indigo-900"
-                  : "border-slate-200 bg-white hover:border-slate-300"
+                  : "border-slate-200 bg-surface hover:border-slate-300"
               )}
             >
               <span
@@ -254,7 +254,7 @@ export function TimedTest() {
                 Next
               </Button>
             ) : (
-              <Button variant="gradient" onClick={submit} disabled={submitting}>
+              <Button onClick={submit} disabled={submitting}>
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 {submitting ? "Submitting..." : "Submit test"}
               </Button>

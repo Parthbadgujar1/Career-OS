@@ -121,6 +121,7 @@ model StudentProfile {
 
   skills                  StudentSkill[]
   assessments             Assessment[]
+  assessmentQuestions     AssessmentQuestion[]
   roadmap                 Roadmap?
   tasks                   Task[]
   weeklyReports           WeeklyReport[]
@@ -194,6 +195,31 @@ model Assessment {
   @@index([studentId, type])
 }
 
+// ============ ADAPTIVE SKILL ASSESSMENT STORE ============
+// Generated questions are persisted server-side (with their correct answer) so
+// grading can be computed honestly at submit time instead of trusting client
+// flags. Selected answers are written back when each round is submitted.
+
+model AssessmentQuestion {
+  id           String         @id @default(cuid())
+  studentId    String
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  round        Int // 0 = initial, 1 = follow-up
+  questionId   String // q1, fu1, ...
+  question     String         @db.Text
+  options      String         @db.Text // JSON array of 4 options
+  correctIndex Int
+  topic        String
+  skillArea    String
+  difficulty   String
+  selected     Int? // filled in when the round is submitted
+  correct      Boolean? // filled in when the round is submitted
+  createdAt    DateTime       @default(now())
+
+  @@unique([studentId, questionId])
+  @@index([studentId, round])
+}
+
 // ============ ROADMAP ============
 
 model Roadmap {
@@ -225,6 +251,8 @@ model RoadmapItem {
   order       Int      @default(0)
   status      String   @default("PENDING") // PENDING | IN_PROGRESS | COMPLETED
   source      String   @default("AI") // AI | TEMPLATE
+  academicYear Int? // 1-based academic year this milestone belongs to (year-wise plans)
+  resources   Json? // array of { name, url, kind } free learning resources
   createdAt   DateTime @default(now())
 
   @@index([roadmapId, weekNumber])
@@ -251,6 +279,7 @@ model Task {
   completedAt   DateTime?
   rolloverCount Int            @default(0)
   roadmapItemId String?
+  resources     Json? // array of { name, url, kind } — mirrors the linked roadmap item
   createdAt     DateTime       @default(now())
 
   @@index([studentId, weekStart, status])

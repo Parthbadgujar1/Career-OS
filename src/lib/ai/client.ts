@@ -3,6 +3,8 @@ import { createGoogle } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { rateLimit, RATE_POLICIES } from "@/lib/rate-limit";
+import { auth } from "@/auth";
 
 // ── Provider registry ──────────────────────────────────────────────────────
 
@@ -64,6 +66,14 @@ function availableProviders(): ProviderEntry[] {
   });
 }
 
+/**
+ * True when at least one AI provider is configured. Use this instead of
+ * checking a single provider env var so Groq/OpenAI-only deployments work.
+ */
+export function aiConfigured(): boolean {
+  return availableProviders().length > 0;
+}
+
 // ── Single-provider access (backward-compatible) ───────────────────────────
 
 /**
@@ -91,17 +101,55 @@ export function getModel(modelId?: string) {
 interface FailoverOpts {
   maxRetries?: number;
   userId?: string;
+  timeoutMs?: number;
+}
+
+/** Thrown when a user has exhausted their per-user AI quota for the window. */
+export class AiQuotaError extends Error {
+  readonly retryAfterSec: number;
+  constructor(retryAfterSec: number, feature: string) {
+    super(`AI request limit reached for ${feature}. Try again in ${Math.ceil(retryAfterSec / 60)} minutes.`);
+    this.name = "AiQuotaError";
+    this.retryAfterSec = retryAfterSec;
+  }
+}
+
+/**
+ * Bounds a single AI call so a hanging provider cannot pin the request
+ * indefinitely. The underlying work is abandoned once the deadline passes.
+ */
+const AI_CALL_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS ?? 60000);
+
+function withTimeout<T>(promise: Promise<T>, feature: string, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error(`AI call timed out for "${feature}" after ${timeoutMs}ms`)), timeoutMs);
+    }),
+  ]);
+}
+
+/** Resolve the acting user's id from the current session (best effort). */
+async function currentUserId(): Promise<string | undefined> {
+  try {
+    const session = await auth();
+    return session?.user?.id ?? undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /**
  * Executes `generateFn(provider)` trying providers in priority order.
  * On any non-rate-limit error, the next provider is tried.
- * Usage is logged to the AiUsageLog table.
+ * Usage is logged to the AiUsageLog table (with the acting user id).
+ * Every call counts against the user's per-user AI quota.
  *
  * @example
  * const { object } = await generateWithFailover(
  *   (model) => generateObject({ model, schema: mySchema, prompt }),
  *   "ROADMAP",
+ *   { userId: profile.id },
  * );
  */
 export async function generateWithFailover<T>(
@@ -114,18 +162,26 @@ export async function generateWithFailover<T>(
     throw new Error(`No AI providers configured. Set at least one of: GEMINI_API_KEY, GROQ_API_KEY, OPENAI_API_KEY`);
   }
 
+  const userId = opts.userId ?? (await currentUserId());
+
+  // Per-user quota: fail fast and loudly instead of silently burning tokens.
+  if (userId) {
+    const quota = rateLimit(`ai:${userId}`, RATE_POLICIES.ai);
+    if (!quota.ok) throw new AiQuotaError(quota.retryAfterSec, feature);
+  }
+
   let lastError: Error | null = null;
-  const maxRetries = opts.maxRetries ?? 0;
+  const maxRetries = Math.max(0, opts.maxRetries ?? 0);
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     for (const provider of providers) {
       const t0 = Date.now();
       try {
         const model = provider.create();
-        const result = await generateFn(model);
+        const result = await withTimeout(generateFn(model), feature, opts.timeoutMs ?? AI_CALL_TIMEOUT_MS);
         const latencyMs = Date.now() - t0;
 
-        logUsage({ feature, provider: provider.name, model: provider.modelId, latencyMs, success: true, userId: opts.userId }).catch(() => {});
+        logUsage({ feature, provider: provider.name, model: provider.modelId, latencyMs, success: true, userId }).catch(() => {});
         return result;
       } catch (err: unknown) {
         const latencyMs = Date.now() - t0;
@@ -137,20 +193,10 @@ export async function generateWithFailover<T>(
           latencyMs,
           success: false,
           errorType,
-          userId: opts.userId,
+          userId,
         }).catch(() => {});
         lastError = err instanceof Error ? err : new Error(String(err));
-
-        // Do NOT retry on rate-limit or validation — try next provider immediately.
-        // Do retry on timeout / server error if attempts remain.
-        if (errorType === "RATE_LIMIT" || errorType === "VALIDATION") {
-          continue;
-        }
-        if (attempt < maxRetries) {
-          continue;
-        }
-        // For this provider, the attempt is exhausted. Try next provider.
-        continue;
+        if (err instanceof AiQuotaError) throw err;
       }
     }
   }

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
-import { ensureWeeklyTasks, completeTask, skipTask } from "@/lib/engine/tasks";
+import { ensureWeeklyTasks, completeTask, skipTask, restoreTask } from "@/lib/engine/tasks";
 import { generateWeeklyReport } from "@/lib/engine/reports";
 
 export async function ensureTasksAction() {
@@ -25,6 +25,14 @@ export async function completeTaskAction(taskId: string) {
 export async function skipTaskAction(taskId: string) {
   const { profile } = await requireStudentProfile();
   await skipTask(prisma, profile.id, taskId);
+  revalidatePath("/app/tasks");
+  revalidatePath("/app/roadmap");
+  revalidatePath("/app");
+}
+
+export async function restoreTaskAction(taskId: string) {
+  const { profile } = await requireStudentProfile();
+  await restoreTask(prisma, profile.id, taskId);
   revalidatePath("/app/tasks");
   revalidatePath("/app/roadmap");
   revalidatePath("/app");

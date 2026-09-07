@@ -139,6 +139,52 @@ export function durationLabel(weeks: number): string {
   return ROADMAP_DURATIONS.find((d) => d.weeks === weeks)?.label ?? `${weeks} Weeks`;
 }
 
+// ── Academic year math for year-wise roadmaps ──────────────────────────────
+// Roadmaps span the student's remaining college years; weeks are grouped back
+// into academic years so the plan reads "Year 1 → Year 2 → ..." not "week 51".
+
+export const WEEKS_PER_YEAR = 52;
+
+export function academicYearsForDegree(degree?: string | null): number {
+  const d = (degree ?? "").toLowerCase();
+  if (/(mbbs|bds|barch)/.test(d)) return 5;
+  if (/(b\.?tech|btech|b\.?e\b|be\b|engineering)/.test(d)) return 4;
+  if (/(m\.?tech|mtech|m\.?ca|mca|m\.?ba|mba|m\.?sc|msc|pgdm)/.test(d)) return 2;
+  if (/(b\.?sc|bsc|bca|b\.?ba|bba|b\.?com|bcom|b\.?a\b|ba\b)/.test(d)) return 3;
+  return 3;
+}
+
+/** "1st Year" → 1, "Final Year" → 0 (unknown single-digit year). */
+export function yearIndexFromLabel(year?: string | null): number {
+  const y = (year ?? "").toLowerCase().replace("year", "").trim();
+  if (/^1/.test(y)) return 1;
+  if (/^2/.test(y)) return 2;
+  if (/^3/.test(y)) return 3;
+  if (/^4/.test(y)) return 4;
+  if (/final|last|final year/.test(y)) return 0;
+  return parseInt(y, 10) > 0 && parseInt(y, 10) <= 5 ? parseInt(y, 10) : 0;
+}
+
+/** Full degree years, with unknown/final year treated as the last year. */
+export function totalDegreeYears(degree?: string | null, year?: string | null): number {
+  const total = academicYearsForDegree(degree);
+  const idx = yearIndexFromLabel(year);
+  return idx > 0 ? Math.min(idx, total) : total;
+}
+
+/** Years of the degree still ahead, including the current one (min 1). */
+export function remainingAcademicYears(year?: string | null, degree?: string | null): number {
+  const total = academicYearsForDegree(degree);
+  const idx = yearIndexFromLabel(year);
+  const current = idx > 0 ? Math.min(idx, total) : total;
+  return Math.max(1, total - current + 1);
+}
+
+/** How many weeks a full remaining-college plan should cover. */
+export function recommendedRoadmapWeeks(year?: string | null, degree?: string | null): number {
+  return remainingAcademicYears(year, degree) * WEEKS_PER_YEAR;
+}
+
 export const CAREER_ROLES = [
   "Software Developer",
   "Frontend Developer",

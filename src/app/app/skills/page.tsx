@@ -45,7 +45,7 @@ export default async function SkillsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold">Skills Dashboard</h1>
+        <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900">Skills Dashboard</h1>
         <p className="text-sm text-slate-500">Track your proficiency across all skill areas</p>
       </div>
 
@@ -55,37 +55,41 @@ export default async function SkillsPage() {
       )}
 
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+        <Card className="relative overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-0.5 bg-indigo-500" />
           <CardContent className="pt-5">
             <p className="text-sm text-slate-500">Total Skills</p>
-            <p className="mt-1 text-3xl font-bold">{skills.length}</p>
+            <p className="mt-1 font-serif text-3xl font-semibold text-slate-900">{skills.length}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="relative overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-0.5 bg-emerald-500" />
           <CardContent className="pt-5">
             <div className="flex items-center justify-between">
               <p className="text-sm text-slate-500">Strong (4-5)</p>
               <Sparkles className="h-4 w-4 text-emerald-500" />
             </div>
-            <p className="mt-1 text-3xl font-bold text-emerald-600">{strong}</p>
+            <p className="mt-1 font-serif text-3xl font-semibold text-emerald-600">{strong}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="relative overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-0.5 bg-amber-500" />
           <CardContent className="pt-5">
             <div className="flex items-center justify-between">
               <p className="text-sm text-slate-500">Developing (2-3)</p>
               <Brain className="h-4 w-4 text-amber-500" />
             </div>
-            <p className="mt-1 text-3xl font-bold text-amber-600">{developing}</p>
+            <p className="mt-1 font-serif text-3xl font-semibold text-amber-600">{developing}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="relative overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-0.5 bg-rose-500" />
           <CardContent className="pt-5">
             <div className="flex items-center justify-between">
               <p className="text-sm text-slate-500">Learning (1)</p>
               <BookOpen className="h-4 w-4 text-rose-500" />
             </div>
-            <p className="mt-1 text-3xl font-bold text-rose-600">{learning}</p>
+            <p className="mt-1 font-serif text-3xl font-semibold text-rose-600">{learning}</p>
           </CardContent>
         </Card>
       </div>

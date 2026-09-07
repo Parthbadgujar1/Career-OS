@@ -35,7 +35,7 @@ export default async function AdminMentorsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold">Mentor Management</h1>
+        <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900">Mentor Management</h1>
         <p className="text-sm text-slate-500">Every assignment is reflected instantly on student and mentor dashboards</p>
       </div>
 
@@ -74,7 +74,7 @@ export default async function AdminMentorsPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 text-sm font-bold text-white">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-sm font-bold text-white shadow-sm shadow-indigo-900/10">
                     {(m.name || "M")[0].toUpperCase()}
                   </div>
                   <div>

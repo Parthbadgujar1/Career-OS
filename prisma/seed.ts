@@ -117,27 +117,6 @@ const EVENTS = [
 async function main() {
   console.log("Seeding database...");
 
-  // Users
-  const adminPassword = await hash("admin123", 10);
-  const mentorPassword = await hash("mentor123", 10);
-  const studentPassword = await hash("student123", 10);
-
-  await prisma.user.upsert({
-    where: { email: "admin@carrer.com" },
-    update: {},
-    create: { name: "Admin", email: "admin@carrer.com", passwordHash: adminPassword, role: "ADMIN" },
-  });
-  const mentor = await prisma.user.upsert({
-    where: { email: "mentor@carrer.com" },
-    update: {},
-    create: { name: "Mentor", email: "mentor@carrer.com", passwordHash: mentorPassword, role: "MENTOR" },
-  });
-  const student = await prisma.user.upsert({
-    where: { email: "student@carrer.com" },
-    update: {},
-    create: { name: "Demo Student", email: "student@carrer.com", passwordHash: studentPassword, role: "STUDENT" },
-  });
-
   // Skills
   const skillMap = new Map<string, string>();
   for (const [i, s] of SKILLS.entries()) {
@@ -149,40 +128,68 @@ async function main() {
     skillMap.set(s.name, skill.id);
   }
 
-  // Student profile
-  const profile = await prisma.studentProfile.upsert({
-    where: { userId: student.id },
-    update: {},
-    create: {
-      userId: student.id,
-      degree: "B.Tech",
-      specialization: "Computer Science",
-      year: "2nd Year",
-      targetRole: "Data Analyst",
-      targetRoles: JSON.stringify(["Data Analyst"]),
-      interests: JSON.stringify(["Data & Analytics", "Competitive Programming"]),
-      preferredIndustries: "[]",
-      preferences: "{}",
-      weeklyHours: 12,
-      onboardedAt: new Date(),
-      assessmentComplete: true,
-      mentorId: mentor.id,
-    },
-  });
+  // Demo accounts, sample student data and fake events are development-only.
+  // Skip them in production unless explicitly allowed so credentials/goal-less
+  // records never ship to a live deploy.
+  const demoAllowed = process.env.NODE_ENV !== "production" || process.env.ALLOW_DEMO_SEED === "true";
 
-  // Sample skill ratings
-  const sampleRatings: [string, number][] = [
-    ["Python", 4], ["SQL", 2], ["Pandas", 3], ["Statistics", 2], ["Excel", 3],
-    ["Data Structures", 2], ["Communication", 3], ["Aptitude", 3],
-  ];
-  for (const [name, rating] of sampleRatings) {
-    const skillId = skillMap.get(name);
-    if (!skillId) continue;
-    await prisma.studentSkill.upsert({
-      where: { studentId_skillId: { studentId: profile.id, skillId } },
-      update: { selfRating: rating },
-      create: { studentId: profile.id, skillId, selfRating: rating },
+  // Users
+  if (demoAllowed) {
+    const adminPassword = await hash("admin123", 10);
+    const mentorPassword = await hash("mentor123", 10);
+    const studentPassword = await hash("student123", 10);
+
+    await prisma.user.upsert({
+      where: { email: "admin@carrer.com" },
+      update: {},
+      create: { name: "Admin", email: "admin@carrer.com", passwordHash: adminPassword, role: "ADMIN" },
     });
+    const mentor = await prisma.user.upsert({
+      where: { email: "mentor@carrer.com" },
+      update: {},
+      create: { name: "Mentor", email: "mentor@carrer.com", passwordHash: mentorPassword, role: "MENTOR" },
+    });
+    const student = await prisma.user.upsert({
+      where: { email: "student@carrer.com" },
+      update: {},
+      create: { name: "Demo Student", email: "student@carrer.com", passwordHash: studentPassword, role: "STUDENT" },
+    });
+
+    // Student profile
+    const profile = await prisma.studentProfile.upsert({
+      where: { userId: student.id },
+      update: {},
+      create: {
+        userId: student.id,
+        degree: "B.Tech",
+        specialization: "Computer Science",
+        year: "2nd Year",
+        targetRole: "Data Analyst",
+        targetRoles: JSON.stringify(["Data Analyst"]),
+        interests: JSON.stringify(["Data & Analytics", "Competitive Programming"]),
+        preferredIndustries: "[]",
+        preferences: "{}",
+        weeklyHours: 12,
+        onboardedAt: new Date(),
+        assessmentComplete: true,
+        mentorId: mentor.id,
+      },
+    });
+
+    // Sample skill ratings
+    const sampleRatings: [string, number][] = [
+      ["Python", 4], ["SQL", 2], ["Pandas", 3], ["Statistics", 2], ["Excel", 3],
+      ["Data Structures", 2], ["Communication", 3], ["Aptitude", 3],
+    ];
+    for (const [name, rating] of sampleRatings) {
+      const skillId = skillMap.get(name);
+      if (!skillId) continue;
+      await prisma.studentSkill.upsert({
+        where: { studentId_skillId: { studentId: profile.id, skillId } },
+        update: { selfRating: rating },
+        create: { studentId: profile.id, skillId, selfRating: rating },
+      });
+    }
   }
 
   // Coding problems
@@ -211,18 +218,22 @@ async function main() {
     }
   }
 
-  // Events
-  for (const ev of EVENTS) {
-    const existing = await prisma.event.findFirst({ where: { title: ev.title } });
-    if (!existing) {
-      await prisma.event.create({ data: ev });
+  // Events (demo content — dev only)
+  if (demoAllowed) {
+    for (const ev of EVENTS) {
+      const existing = await prisma.event.findFirst({ where: { title: ev.title } });
+      if (!existing) {
+        await prisma.event.create({ data: ev });
+      }
     }
   }
 
   console.log("Seed complete.");
-  console.log("  Admin  → admin@carrer.com / admin123");
-  console.log("  Mentor → mentor@carrer.com / mentor123");
-  console.log("  Student→ student@carrer.com / student123");
+  if (demoAllowed) {
+    console.log("  Admin  → admin@carrer.com / admin123");
+    console.log("  Mentor → mentor@carrer.com / mentor123");
+    console.log("  Student→ student@carrer.com / student123");
+  }
 }
 
 main()

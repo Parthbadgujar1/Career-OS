@@ -4,7 +4,9 @@ import { generateText } from "ai";
 import { prisma } from "@/lib/prisma";
 import { requireStudentProfile } from "@/lib/auth-helper";
 import { ensureWeeklyTasks } from "@/lib/engine/tasks";
-import { generateWithFailover } from "@/lib/ai/client";
+import { generateWithFailover, AiQuotaError } from "@/lib/ai/client";
+
+const MAX_COACH_MESSAGE_CHARS = 2_000;
 
 interface CoachContext {
   name: string;
@@ -108,6 +110,8 @@ function keywordResponse(ctx: CoachContext, message: string): string {
 export async function coachChatAction(message: string): Promise<{ response: string }> {
   const { profile } = await requireStudentProfile();
   const ctx = await buildContext(profile.id);
+  const trimmed = (message || "").slice(0, MAX_COACH_MESSAGE_CHARS).trim();
+  if (!trimmed) return { response: keywordResponse(ctx, message) };
 
   try {
     const { text } = await generateWithFailover(
@@ -123,7 +127,7 @@ Real student context (use this, never invent data):
 - Coding problems solved: ${ctx.codingSolved}
 - Mock interviews: ${ctx.interviews}
 
-Student message: "${message}"
+Student message: "${trimmed}"
 
 Reply as a concise, motivating coach (max ~120 words). If the student asks something about their data, answer using the context above. End with one concrete next action.`,
       }),
@@ -131,6 +135,9 @@ Reply as a concise, motivating coach (max ~120 words). If the student asks somet
     );
     if (text.trim()) return { response: text.trim() };
   } catch (e) {
+    if (e instanceof AiQuotaError) {
+      return { response: `You've reached this week's AI coaching limit. ${e.message} Your progress is untouched — come back later or check your plan above.` };
+    }
     console.error("[coach] AI chat failed", e);
   }
 

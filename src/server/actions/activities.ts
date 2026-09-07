@@ -6,6 +6,9 @@ import { requireStudentProfile } from "@/lib/auth-helper";
 import { snapshotReadiness } from "@/lib/scoring/readiness";
 import { APTITUDE_PRACTICE_SETS } from "@/lib/assessment-data";
 import { evaluateCodeSolution } from "@/lib/ai/coding";
+import { aiConfigured, AiQuotaError } from "@/lib/ai/client";
+
+const MAX_CODE_CHARS = 30_000;
 
 export async function registerEventAction(eventId: string) {
   const { profile } = await requireStudentProfile();
@@ -104,8 +107,8 @@ export async function getAiCodingFeedbackAction(
   const problem = await prisma.codingProblem.findUnique({ where: { id: problemId } });
   if (!problem) return { error: "Problem not found" };
 
-  if (!process.env.GEMINI_API_KEY) {
-    return { error: "AI features are currently unavailable (missing API key)." };
+  if (!aiConfigured()) {
+    return { error: "AI features are currently unavailable (no API key configured)." };
   }
 
   try {
@@ -114,7 +117,7 @@ export async function getAiCodingFeedbackAction(
       topic: problem.topic,
       difficulty: problem.difficulty,
       description: problem.description,
-      code,
+      code: (code || "").slice(0, MAX_CODE_CHARS),
     });
 
     return {
@@ -125,6 +128,7 @@ export async function getAiCodingFeedbackAction(
       spaceComplexity: feedback.spaceComplexity,
     };
   } catch (e) {
+    if (e instanceof AiQuotaError) return { error: e.message };
     console.error("[coding feedback] AI feedback failed", e);
     return { error: "Failed to generate AI feedback. Please try again later." };
   }

@@ -33,7 +33,7 @@ export default async function ProjectsPage() {
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Projects</h1>
+          <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900">Projects</h1>
           <p className="text-sm text-slate-500">
             Your portfolio evidence — every project raises your readiness score.
           </p>
@@ -96,7 +96,7 @@ export default async function ProjectsPage() {
           Your projects ({projects.length})
         </h2>
         {projects.length === 0 && (
-          <p className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
+          <p className="rounded-lg border border-slate-200 bg-surface p-6 text-center text-sm text-slate-500">
             No projects yet. Start one from your roadmap or the recommendations above.
           </p>
         )}

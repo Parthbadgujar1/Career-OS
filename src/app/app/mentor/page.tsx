@@ -57,7 +57,7 @@ export default async function MentorPage() {
     <div className="mx-auto max-w-4xl space-y-6 animate-fade-in-up">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">My Mentor</h1>
+          <h1 className="font-serif text-3xl font-medium tracking-tight">My Mentor</h1>
           <p className="text-sm text-slate-500">Connect with your assigned mentor for guidance</p>
         </div>
       </div>
@@ -69,7 +69,7 @@ export default async function MentorPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 text-2xl font-bold text-white">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-2xl font-bold text-white">
                 {(mentor.name || "M")[0].toUpperCase()}
               </div>
               <div className="flex-1">
@@ -118,7 +118,7 @@ export default async function MentorPage() {
                       <CardContent className="p-4">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 text-lg font-bold text-white">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-lg font-bold text-white">
                               {initial}
                             </div>
                             <div>
@@ -133,7 +133,7 @@ export default async function MentorPage() {
                             </div>
                           </div>
                           <form action={assignMentorToMeAction.bind(null, r.mentor.userId)}>
-                            <Button type="submit" variant="gradient" size="sm">
+                            <Button type="submit" size="sm">
                               <UserPlus className="h-4 w-4 mr-1.5" />
                               Assign
                             </Button>
